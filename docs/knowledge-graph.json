@@ -1,0 +1,165 @@
+{
+  "project": {
+    "name": "Society Maintenance Tracker",
+    "description": "Greenfield FastAPI backend for apartment-society complaint management: residents file complaints (with photos), admins manage categories, priorities, status lifecycle, notices, dashboard stats, and overdue tracking.",
+    "stack": [
+      "Python 3.12",
+      "FastAPI",
+      "SQLAlchemy 2.x SYNC",
+      "Pydantic v2",
+      "Alembic",
+      "PostgreSQL via psycopg",
+      "PyJWT",
+      "argon2-cffi",
+      "uvicorn"
+    ],
+    "api_prefix": "/api/v1"
+  },
+  "decisions": {
+    "locked_do_not_revisit": true,
+    "items": [
+      "postgres host port 5433 (5432 occupied by unrelated container backend-db-1); inside compose network db:5432",
+      "dedicated test database smt_test on same server, created/dropped by tests/conftest.py",
+      "lifecycle OPEN->IN_PROGRESS, IN_PROGRESS->RESOLVED, OPEN->RESOLVED ALLOWED (requires admin note)",
+      "RESOLVED is immutable; no reopen mechanism",
+      "overdue is dynamic: status != RESOLVED AND now(UTC) > created_at + threshold_days; threshold stored in system_settings table key 'overdue_threshold_days', default 3 from env OVERDUE_THRESHOLD_DAYS, range 1..365, admin-editable",
+      "admin listing order: overdue first, then priority HIGH > LOW, then newest first",
+      "notices order: is_important desc, created_at desc",
+      "emails dispatched post-commit as background tasks; failure logged, never corrupts transaction; EMAIL_ENABLED=false logs instead of sending",
+      "important notice email sent only on notice CREATION (not on later toggles of is_important)",
+      "priority changes do NOT create history entries; history records status changes only",
+      "pagination envelope {total, limit, offset, items}; error shape {detail, code}",
+      "UUID primary keys via SQLAlchemy Uuid type; UTC timezone-aware timestamps; ISO 8601 serialization",
+      "photo upload: StorageService abstraction, local implementation under uploads/complaints/, UUID filenames, MIME whitelist image/jpeg|png|webp + extension check + size cap MAX_UPLOAD_SIZE_MB (default 5MB); DB stores path reference only",
+      "login accepts JSON {email,password}; Swagger Authorize uses OAuth2PasswordBearer tokenUrl /api/v1/auth/login",
+      "resident sees own complaints only; foreign complaint returns 404 (not 403)",
+      "categories soft-deleted via is_active=false when referenced by complaints"
+    ],
+    "seed": {
+      "command": "python -m app.seed",
+      "accounts": {
+        "admin": { "email": "admin@example.com", "password": "Admin123!ChangeMe" },
+        "resident": { "email": "resident@example.com", "password": "Resident123!ChangeMe" }
+      },
+      "warning": "DEV ONLY credentials"
+    }
+  },
+  "entities": {
+    "User": {
+      "fields": ["id uuid PK", "name", "email unique", "password_hash", "role enum RESIDENT|ADMIN", "is_active", "created_at", "updated_at"]
+    },
+    "Category": {
+      "fields": ["id uuid PK", "name unique", "description nullable", "is_active", "created_at", "updated_at"]
+    },
+    "Complaint": {
+      "fields": ["id uuid PK", "resident_id FK users", "category_id FK categories", "description text", "photo_path nullable", "priority enum default LOW", "status enum default OPEN", "created_at indexed", "updated_at", "resolved_at nullable"],
+      "indexes": ["resident_id", "category_id", "status", "priority", "created_at"]
+    },
+    "ComplaintHistory": {
+      "fields": ["id uuid PK", "complaint_id FK complaints CASCADE", "status enum", "actor_id FK users", "note nullable", "created_at"],
+      "indexes": ["complaint_id"],
+      "rules": ["IMMUTABLE append-only", "complaint creation inserts initial OPEN row"]
+    },
+    "Notice": {
+      "fields": ["id uuid PK", "title", "content", "is_important indexed", "created_by FK users", "created_at", "updated_at"],
+      "indexes": ["is_important", "composite (is_important, created_at)"]
+    },
+    "SystemSetting": {
+      "fields": ["key string PK", "value string", "updated_at"]
+    }
+  },
+  "relations": [
+    { "from": "Complaint.resident_id", "to": "User.id", "cascade": "RESTRICT" },
+    { "from": "Complaint.category_id", "to": "Category.id", "cascade": "RESTRICT" },
+    { "from": "ComplaintHistory.complaint_id", "to": "Complaint.id", "cascade": "CASCADE" },
+    { "from": "ComplaintHistory.actor_id", "to": "User.id", "cascade": "RESTRICT" },
+    { "from": "Notice.created_by", "to": "User.id", "cascade": "RESTRICT" }
+  ],
+  "services": {
+    "auth_service": "Registration, login with argon2 verification, JWT issue/verify, current-user resolution.",
+    "complaint_service": "CRUD for complaints, photo attachment, filtering/sorting/pagination, admin ordering, status/priority transitions with history recording and immutability checks.",
+    "notice_service": "CRUD for notices with importance ordering and creation-time email trigger.",
+    "notification_service": "Email dispatch as post-commit background tasks; no-op logging when EMAIL_ENABLED=false.",
+    "storage_service": "Abstraction over file storage; local impl saves uploads/complaints/ with UUID filenames, MIME/extension whitelist and size cap.",
+    "dashboard_service": "Aggregated summary counts/stats for the admin dashboard.",
+    "overdue_service": "Dynamic overdue computation against overdue_threshold_days setting from system_settings.",
+    "settings_service": "Read/write key-value rows in system_settings incl. validation of overdue threshold range 1..365."
+  },
+  "routes": [
+    { "method": "POST", "path": "/api/v1/auth/register", "purpose": "Register new user" },
+    { "method": "POST", "path": "/api/v1/auth/login", "purpose": "JSON login, returns JWT bearer token" },
+    { "method": "GET", "path": "/api/v1/auth/me", "purpose": "Current authenticated user" },
+    { "method": "PATCH", "path": "/api/v1/users/me", "purpose": "Update own profile" },
+
+    { "method": "GET", "path": "/api/v1/categories", "purpose": "List categories" },
+    { "method": "POST", "path": "/api/v1/categories", "purpose": "Create category (admin)" },
+    { "method": "PATCH", "path": "/api/v1/categories/{id}", "purpose": "Update category (admin)" },
+    { "method": "DELETE", "path": "/api/v1/categories/{id}", "purpose": "Soft-delete via is_active=false when referenced (admin)" },
+
+    { "method": "POST", "path": "/api/v1/complaints", "purpose": "Create complaint (multipart form with optional photo)" },
+    { "method": "GET", "path": "/api/v1/complaints", "purpose": "List complaints; filters: category_id,status,priority,date_from,date_to,overdue,limit,offset,sort; resident sees own only" },
+    { "method": "GET", "path": "/api/v1/complaints/{id}", "purpose": "Get single complaint (404 if foreign for resident)" },
+    { "method": "PATCH", "path": "/api/v1/complaints/{id}/status", "purpose": "Transition status per lifecycle; OPEN->RESOLVED requires admin note; RESOLVED immutable; writes history" },
+    { "method": "PATCH", "path": "/api/v1/complaints/{id}/priority", "purpose": "Set priority (admin); no history entry" },
+    { "method": "GET", "path": "/api/v1/complaints/{id}/history", "purpose": "Status-change history (append-only)" },
+
+    { "method": "GET", "path": "/api/v1/notices", "purpose": "List notices ordered is_important desc, created_at desc" },
+    { "method": "POST", "path": "/api/v1/notices", "purpose": "Create notice (admin); email blast if important" },
+    { "method": "GET", "path": "/api/v1/notices/{id}", "purpose": "Get single notice" },
+    { "method": "PATCH", "path": "/api/v1/notices/{id}", "purpose": "Update notice (admin); toggling importance sends no email" },
+    { "method": "DELETE", "path": "/api/v1/notices/{id}", "purpose": "Delete notice (admin)" },
+
+    { "method": "GET", "path": "/api/v1/dashboard/summary", "purpose": "Dashboard aggregate stats" },
+    { "method": "GET", "path": "/api/v1/admin/settings", "purpose": "View system settings (admin)" },
+    { "method": "PATCH", "path": "/api/v1/admin/settings/overdue-threshold", "purpose": "Edit overdue_threshold_days (range 1..365, admin)" },
+
+    { "method": "GET", "path": "/health", "purpose": "Liveness probe" },
+    { "method": "GET", "path": "/health/db", "purpose": "Database connectivity probe" }
+  ],
+  "waves": {
+    "wave_1": {
+      "title": "Tooling + knowledge graph",
+      "agent_owner": "docs/planner agent (done now)",
+      "file_scope": ["pyproject.toml", "requirements.txt", ".gitignore", ".env.example", "docker-compose.yml", "Dockerfile", "alembic.ini", "docs/knowledge-graph.json", "docs/index.json"]
+    },
+    "wave_2": {
+      "title": "Core + storage/notification foundations",
+      "agent_owner": "core-infra agent",
+      "file_scope": ["app/core/config.py", "app/core/security.py", "app/core/enums.py", "app/core/exceptions.py", "app/db/base.py", "app/db/session.py", "app/services/storage_service.py", "app/services/notification_service.py"]
+    },
+    "wave_3": {
+      "title": "Models + schemas",
+      "agent_owner": "models-schemas agent",
+      "file_scope": ["app/models/*.py", "app/schemas/*.py"]
+    },
+    "wave_4": {
+      "title": "Migration + domain routes/services",
+      "agent_owner": "domain-api agent",
+      "file_scope": ["alembic/env.py", "alembic/versions/*", "app/api/router.py", "app/api/routes/*.py", "app/services/auth_service.py", "app/services/complaint_service.py", "app/services/notice_service.py", "app/services/dashboard_service.py", "app/services/overdue_service.py", "app/services/settings_service.py", "app/core/dependencies.py"]
+    },
+    "wave_5": {
+      "title": "Wiring + seed",
+      "agent_owner": "wiring agent",
+      "file_scope": ["app/main.py", "app/seed.py"]
+    },
+    "wave_6": {
+      "title": "Tests + docs",
+      "agent_owner": "tests-docs agent",
+      "file_scope": ["tests/conftest.py", "tests/*.py", "README.md"]
+    },
+    "wave_7": {
+      "title": "Verification",
+      "agent_owner": "verifier agent",
+      "file_scope": ["full-stack run: alembic upgrade head, seed, smoke-test all routes, health probes"]
+    }
+  },
+  "status": {
+    "wave_1": "in_progress",
+    "wave_2": "pending",
+    "wave_3": "pending",
+    "wave_4": "pending",
+    "wave_5": "pending",
+    "wave_6": "pending",
+    "wave_7": "pending"
+  }
+}
