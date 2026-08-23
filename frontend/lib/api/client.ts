@@ -7,6 +7,7 @@ import type {
   Complaint,
   ComplaintQuery,
   DashboardSummary,
+  HistoryEntry,
   HistoryResponse,
   Notice,
   NoticeCreate,
@@ -110,6 +111,8 @@ export const api = {
     apiRequest<Complaint>(`/complaints/${id}/status`, { method: 'PATCH', body: JSON.stringify(body) }, token),
   updatePriority: (token: string, id: string, priority: Priority) =>
     apiRequest<Complaint>(`/complaints/${id}/priority`, { method: 'PATCH', body: JSON.stringify({ priority }) }, token),
+  addNote: (token: string, id: string, note: string) =>
+    apiRequest<HistoryEntry>(`/complaints/${id}/notes`, { method: 'POST', body: JSON.stringify({ note }) }, token),
   photo: (token: string, id: string) => apiRequestBlob(`/complaints/${id}/photo`, token),
 
   categories: (token: string) => apiRequest<Category[]>('/categories', {}, token),

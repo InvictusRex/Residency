@@ -1,6 +1,14 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('/fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
 /* ============================================================
    RESIDENCY — NEON OBSIDIAN DESIGN SYSTEM
    Pitch-black cyber-brutalist operations console
@@ -278,10 +286,11 @@ html.light .page-heading h1 { color: var(--text-hi); }
 @media (max-width: 980px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
 .status-block { padding: 10px 20px 22px; display: flex; align-items: center; gap: 28px; }
-.donut-wrap { position: relative; flex-shrink: 0; }
-.donut-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.donut-wrap { position: relative; width: 112px; height: 112px; flex-shrink: 0; display: grid; place-items: center; }
+.donut-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.donut-center { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.15; }
 .donut-center strong { font-family: var(--font-space); font-size: 22px; color: var(--text-hi); display: block; }
-.donut-center span { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+.donut-center span { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
 .status-legend { flex: 1; display: grid; gap: 10px; }
 .legend-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-slate); }
 .legend-row i { width: 10px; height: 10px; border-radius: 0; }

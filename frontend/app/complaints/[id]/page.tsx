@@ -1,7 +1,8 @@
 'use client'
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams, useRouter } from 'next/navigation'
-import { api } from '@/lib/api/client'
+import { api, errorMessage } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
 import type { Priority } from '@/lib/types'
 import { useAuth } from '@/components/auth-provider'
@@ -10,6 +11,7 @@ import { PhotoImage } from '@/components/shared/photo-image'
 import { PriorityBadge, StatusBadge, formatDateTime } from '@/components/ui/badge'
 import { Icon } from '@/components/ui/icon'
 import { LoadingState } from '@/components/shared/states'
+import { useToast } from '@/components/ui/toast'
 import { StatusActions } from '@/components/complaints/status-actions'
 import { useComplaintPriorityMutation } from '@/components/complaints/use-complaint-mutations'
 import AnimatedContent from '@/components/animations/AnimatedContent'
@@ -33,6 +35,20 @@ export default function ComplaintDetailPage() {
 
   const priorityMutation = useComplaintPriorityMutation(id, token!)
   const isAdmin = user?.role === 'ADMIN'
+  const toast = useToast()
+  const qc = useQueryClient()
+  const [updateNote, setUpdateNote] = useState('')
+
+  const noteMutation = useMutation({
+    mutationFn: (note: string) => api.addNote(token!, id, note),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.history(id) })
+      qc.invalidateQueries({ queryKey: queryKeys.complaint(id) })
+      toast.toast('success', 'Progress update posted.')
+      setUpdateNote('')
+    },
+    onError: (err) => toast.toast('error', errorMessage(err)),
+  })
 
   if (q.isPending)
     return (
@@ -179,7 +195,32 @@ export default function ComplaintDetailPage() {
                       <small>
                         {item.actor.name} · {formatDateTime(item.created_at)}
                       </small>
-                    </div>
+{isAdmin && c.status !== 'RESOLVED' && (
+            <section className="panel" style={{ padding: 20 }}>
+              <div className="section-label" style={{ marginBottom: 10 }}>Progress Update</div>
+              <p className="meta" style={{ margin: '0 0 12px' }}>
+                Post an update while work is in progress. It appears in the status timeline below.
+              </p>
+              <textarea
+                rows={3}
+                value={updateNote}
+                onChange={(e) => setUpdateNote(e.target.value)}
+                placeholder="e.g. Plumber on site, valve replaced…"
+                maxLength={2000}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+                <button
+                  className="primary"
+                  disabled={noteMutation.isPending || updateNote.trim().length === 0}
+                  onClick={() => noteMutation.mutate(updateNote.trim())}
+                >
+                  <Icon name="send" size={16} />
+                  {noteMutation.isPending ? 'Posting…' : 'Post update'}
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
                   </li>
                 ))}
               </ul>

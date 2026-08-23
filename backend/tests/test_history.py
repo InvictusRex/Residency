@@ -155,3 +155,65 @@ class TestHistoryAccessControl:
         complaint = complaint_factory(resident_headers)
         resp = _history(client, resident_headers, complaint["id"])
         assert resp.status_code == 200, resp.text
+
+class TestProgressNotes:
+    def _note(self, client, headers, complaint_id, note="Plumber arrived on site."):
+        return client.post(
+            f"{API}/complaints/{complaint_id}/notes",
+            headers=headers,
+            json={"note": note},
+        )
+
+    def test_admin_posts_progress_note_appears_in_history(
+        self, client, admin_headers, resident_headers, complaint_factory
+    ):
+        complaint = complaint_factory(resident_headers)
+        resp = self._note(client, admin_headers, complaint["id"], "Plumber dispatched to unit 4B.")
+        assert resp.status_code == 201, resp.text
+        body = resp.json()
+        assert body["status"] == "OPEN"
+        assert body["note"] == "Plumber dispatched to unit 4B."
+        assert body["actor"]["role"] == "ADMIN"
+        history = _history(client, admin_headers, complaint["id"]).json()
+        assert len(history["items"]) == 2
+        assert history["items"][1]["note"] == "Plumber dispatched to unit 4B."
+
+    def test_note_preserves_current_in_progress_status(
+        self, client, admin_headers, resident_headers, complaint_factory
+    ):
+        complaint = complaint_factory(resident_headers)
+        client.patch(
+            f"{API}/complaints/{complaint['id']}/status",
+            headers=admin_headers,
+            json={"status": "IN_PROGRESS", "note": "Work started"},
+        )
+        resp = self._note(client, admin_headers, complaint["id"], "Waiting on replacement valve.")
+        assert resp.status_code == 201, resp.text
+        assert resp.json()["status"] == "IN_PROGRESS"
+
+    def test_resident_cannot_post_note(
+        self, client, resident_headers, second_resident_headers, complaint_factory
+    ):
+        complaint = complaint_factory(resident_headers)
+        resp = self._note(client, resident_headers, complaint["id"])
+        assert resp.status_code == 403
+
+    def test_note_on_resolved_complaint_rejected(
+        self, client, admin_headers, resident_headers, complaint_factory
+    ):
+        complaint = complaint_factory(resident_headers)
+        client.patch(
+            f"{API}/complaints/{complaint['id']}/status",
+            headers=admin_headers,
+            json={"status": "RESOLVED", "note": "Fixed"},
+        )
+        resp = self._note(client, admin_headers, complaint["id"])
+        assert resp.status_code == 422
+        assert resp.json()["detail"] == "resolved_complaint_is_closed"
+
+    def test_empty_note_rejected(
+        self, client, admin_headers, resident_headers, complaint_factory
+    ):
+        complaint = complaint_factory(resident_headers)
+        resp = self._note(client, admin_headers, complaint["id"], "   ")
+        assert resp.status_code == 422

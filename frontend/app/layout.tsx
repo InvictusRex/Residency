@@ -19,10 +19,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className="dark">
       <body className={`${space.variable} ${mono.variable} ${inter.variable}`} suppressHydrationWarning>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
-        />
         <div className="scanlines" aria-hidden="true" />
         <ThemeProvider>
           <AuthProvider>

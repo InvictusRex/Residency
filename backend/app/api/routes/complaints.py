@@ -11,8 +11,8 @@ from app.core.enums import ComplaintPriority, ComplaintStatus
 from app.core.exceptions import FileUploadError, NotFoundError
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.complaint import ComplaintListResponse, ComplaintOut, PriorityUpdateRequest, StatusUpdateRequest
-from app.schemas.complaint_history import HistoryListResponse
+from app.schemas.complaint import ComplaintListResponse, ComplaintOut, NoteCreateRequest, PriorityUpdateRequest, StatusUpdateRequest
+from app.schemas.complaint_history import HistoryEntryOut, HistoryListResponse
 from app.services import complaint_service
 from app.services.notification_service import notification_service
 from app.services.storage_service import storage_service
@@ -144,6 +144,32 @@ def get_complaint_history(
     complaint = complaint_service.get_complaint_scoped(db, complaint_id, user)
     entries = complaint_service.list_history(db, complaint)
     return HistoryListResponse(complaint_id=complaint.id, items=list(entries))
+
+
+@router.post(
+    "/complaints/{complaint_id}/notes",
+    summary="Post a progress update",
+    description=(
+        "Admin-only. Appends a progress note to the complaint's immutable history timeline "
+        "without changing its status. Rejected once the complaint is RESOLVED (closed)."
+    ),
+    response_model=HistoryEntryOut,
+    status_code=201,
+    responses={
+        403: {"description": "Admin role required"},
+        404: {"description": "Complaint not found"},
+        422: {"description": "Validation error or resolved complaint is closed"},
+    },
+)
+def add_complaint_note(
+    complaint_id: uuid.UUID,
+    payload: NoteCreateRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> HistoryEntryOut:
+    complaint = complaint_service.get_complaint_scoped(db, complaint_id, admin)
+    entry = complaint_service.add_progress_note(db, complaint, admin, payload.note)
+    return HistoryEntryOut.model_validate(entry)
 
 
 @router.patch(

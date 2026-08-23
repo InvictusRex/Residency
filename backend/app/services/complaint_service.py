@@ -229,3 +229,26 @@ def list_history(db: Session, complaint: Complaint) -> list[ComplaintHistory]:
         .order_by(ComplaintHistory.created_at.asc())
     )
     return list(db.execute(stmt).scalars().all())
+
+
+def add_progress_note(
+    db: Session,
+    complaint: Complaint,
+    actor: User,
+    note: str,
+) -> ComplaintHistory:
+    cleaned = note.strip()
+    if not cleaned:
+        raise ValidationError("note_required")
+    if complaint.status == ComplaintStatus.RESOLVED:
+        raise ValidationError("resolved_complaint_is_closed")
+    entry = ComplaintHistory(
+        complaint_id=complaint.id,
+        status=complaint.status,
+        actor_id=actor.id,
+        note=cleaned,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry

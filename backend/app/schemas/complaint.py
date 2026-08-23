@@ -70,3 +70,18 @@ class PriorityUpdateRequest(BaseModel):
     )
 
     priority: ComplaintPriority
+
+
+class NoteCreateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [
+                {
+                    "note": "Plumber arrived, replacing the valve.",
+                }
+            ]
+        },
+    )
+
+    note: str = Field(min_length=1, max_length=2000)
