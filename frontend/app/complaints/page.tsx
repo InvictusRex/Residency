@@ -25,6 +25,7 @@ export default function AdminComplaintsPage() {
   const [rangeError, setRangeError] = useState('')
 
   const categories = useQuery({ queryKey: queryKeys.categories, queryFn: () => api.categories(token!) })
+  const settings = useQuery({ queryKey: queryKeys.settings, queryFn: () => api.settings(token!) })
 
   const qs = buildComplaintQuery({
     limit: PAGE_SIZE,
@@ -138,7 +139,13 @@ export default function AdminComplaintsPage() {
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
         ) : q.data?.items.length ? (
           <>
-            <ComplaintTable items={q.data.items} showResident />
+            <ComplaintTable
+              items={q.data.items}
+              showResident
+              admin
+              token={token!}
+              overdueThresholdDays={settings.data?.overdue_threshold_days}
+            />
             <Pagination page={page} pageSize={PAGE_SIZE} total={q.data.total} onChange={setPage} />
           </>
         ) : (

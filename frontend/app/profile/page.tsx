@@ -4,9 +4,11 @@ import { useMutation } from '@tanstack/react-query'
 import { api, errorMessage } from '@/lib/api/client'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
+import { useToast } from '@/components/ui/toast'
 
 export default function ProfilePage() {
   const { token, user, signIn } = useAuth()
+  const toast = useToast()
   const [name, setName] = useState(user?.name ?? '')
   const [error, setError] = useState('')
 
@@ -15,6 +17,7 @@ export default function ProfilePage() {
     onSuccess: (u) => {
       signIn(token!, u)
       setError('')
+      toast.toast('success', 'Profile updated.')
     },
     onError: (err) => setError(errorMessage(err)),
   })
@@ -35,7 +38,7 @@ export default function ProfilePage() {
         <div>
           <p className="eyebrow">ACCOUNT</p>
           <h1>Your profile</h1>
-          <p className="subheading">Only your name can be updated through the API.</p>
+          <p className="subheading">Account details. Only your name can be edited.</p>
         </div>
       </div>
       <form className="panel form-panel" onSubmit={save}>
@@ -44,15 +47,14 @@ export default function ProfilePage() {
           <input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={120} />
         </label>
         <label>
-          Email
+          Email <small>(read-only)</small>
           <input value={user?.email ?? ''} disabled className="profile-email" />
         </label>
         <label>
-          Role
+          Role <small>(read-only)</small>
           <input value={user?.role ?? ''} disabled className="profile-role" />
         </label>
         {error && <p className="form-error">{error}</p>}
-        {m.isSuccess && !error && <p className="success-message">Profile updated.</p>}
         <button className="primary" type="submit" disabled={m.isPending}>
           {m.isPending ? 'Saving…' : 'Save changes'}
         </button>

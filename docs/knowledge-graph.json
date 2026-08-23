@@ -386,7 +386,8 @@
     "final_qa_audit": "done: 137 pytest passed, 68/68 e2e, docker verified",
     "ci_preparation": "done: GitHub Actions workflow added; conftest parameterized via TEST_DATABASE_URL; 137 passed locally on both default and override paths",
     "monorepo_restructure": "done: app/, alembic/, tests/ moved to backend/ via git mv; alembic.ini script_location -> backend/alembic; env.py prepends backend to sys.path; pyproject pythonpath+testpaths updated; Dockerfile mirrors layout under /app/backend with PYTHONPATH; verified 137 pytest + alembic head + isolated docker build/migrate/seed/photo-persistence",
-    "frontend_integration": "done: full Next.js frontend built against real /api/v1 contract; tsc+build green; 47/47 live E2E; backend pytest 137; CORS verified; auth sessionStorage-only; photos via authenticated blob endpoint"
+    "frontend_integration": "done: full Next.js frontend built against real /api/v1 contract; tsc+build green; 47/47 live E2E; backend pytest 137; CORS verified; auth sessionStorage-only; photos via authenticated blob endpoint",
+    "frontend_refinement": "done: status workflow (Start work/Resolve dialogs, row actions, 409 handling, full invalidation), detail page redesign, admin table overdue highlighting + row actions, dashboard status+category breakdown, categories/notices/settings/profile polish, toast + dropdown system, design-system CSS pass; tsc+build green, backend pytest 137, live E2E 47/47, 11 routes 200"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",

@@ -9,10 +9,12 @@ import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { Dialog } from '@/components/ui/dialog'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
+import { useToast } from '@/components/ui/toast'
 
 export default function AdminCategoriesPage() {
   const { token } = useAuth()
   const qc = useQueryClient()
+  const toast = useToast()
   const q = useQuery({ queryKey: queryKeys.categories, queryFn: () => api.categories(token!) })
   const [createOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<Category | null>(null)
@@ -20,7 +22,11 @@ export default function AdminCategoriesPage() {
 
   const toggleActive = useMutation({
     mutationFn: (c: Category) => api.updateCategory(token!, c.id, { is_active: !c.is_active }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.categories }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.categories })
+      toast.toast('success', 'Category state updated.')
+    },
+    onError: (err) => toast.toast('error', errorMessage(err)),
   })
 
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.categories })
@@ -31,7 +37,9 @@ export default function AdminCategoriesPage() {
         <div>
           <p className="eyebrow">ADMINISTRATION</p>
           <h1>Categories</h1>
-          <p className="subheading">Manage complaint classifications. Inactive categories cannot be selected by residents.</p>
+          <p className="subheading">
+            Manage complaint classifications. Inactive categories cannot be selected by residents.
+          </p>
         </div>
         <button className="primary" onClick={() => setCreateOpen(true)}>
           <Plus size={16} /> New category
@@ -43,19 +51,17 @@ export default function AdminCategoriesPage() {
         ) : q.error ? (
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
         ) : q.data?.length ? (
-          <div className="notice-list">
+          <div>
             {q.data.map((c) => (
-              <div className="category-row" key={c.id}>
+              <div className="category-card" key={c.id}>
                 <div>
-                  <strong style={{ color: '#ddd', fontSize: 12 }}>
-                    {c.name}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <strong style={{ color: '#e8e8e8', fontSize: 12, fontWeight: 600 }}>{c.name}</strong>
                     <span className={`cat-badge ${c.is_active ? 'active' : 'inactive'}`}>
                       {c.is_active ? 'Active' : 'Inactive'}
                     </span>
-                  </strong>
-                  <p style={{ color: '#777', fontSize: 10, margin: '5px 0 0' }}>
-                    {c.description || 'No description'}
-                  </p>
+                  </div>
+                  <p className="cat-desc">{c.description || 'No description'}</p>
                 </div>
                 <div className="cat-actions">
                   <button onClick={() => setEditing(c)}>Edit</button>
@@ -114,6 +120,7 @@ function CategoryFormDialog({
   const [description, setDescription] = useState(category?.description ?? '')
   const [isActive, setIsActive] = useState(category?.is_active ?? true)
   const [error, setError] = useState('')
+  const toast = useToast()
 
   const m = useMutation({
     mutationFn: () =>
@@ -127,6 +134,7 @@ function CategoryFormDialog({
     onSuccess: () => {
       onSaved()
       onClose()
+      toast.toast('success', category ? 'Category updated.' : 'Category created.')
       setError('')
     },
     onError: (err) => setError(errorMessage(err)),
@@ -147,7 +155,7 @@ function CategoryFormDialog({
     <Dialog open={open} onClose={onClose} title={category ? 'Edit category' : 'Create category'}>
       <label>
         Name
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
+        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus />
       </label>
       <label>
         Description
@@ -182,11 +190,13 @@ function ConfirmDeleteCategory({
   onDeleted: () => void
 }) {
   const [error, setError] = useState('')
+  const toast = useToast()
   const m = useMutation({
     mutationFn: () => api.deleteCategory(token, category!.id),
     onSuccess: () => {
       onDeleted()
       onClose()
+      toast.toast('success', 'Category deactivated.')
     },
     onError: (err) => setError(errorMessage(err)),
   })

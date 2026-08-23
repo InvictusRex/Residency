@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Bell } from 'lucide-react'
+import { Bell, Megaphone } from 'lucide-react'
 import { api, buildNoticeQuery } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
 import { useAuth } from '@/components/auth-provider'
@@ -27,7 +27,7 @@ export default function NoticesPage() {
         <div>
           <p className="eyebrow">COMMUNITY UPDATES</p>
           <h1>Notices</h1>
-          <p className="subheading">Official announcements from your community.</p>
+          <p className="subheading">Official announcements from your community. Important notices are pinned first.</p>
         </div>
       </div>
       <section className="panel">
@@ -41,7 +41,7 @@ export default function NoticesPage() {
               {q.data.items.map((n) => (
                 <article className={n.is_important ? 'notice important' : 'notice'} key={n.id}>
                   <div className="notice-icon">
-                    <Bell size={16} />
+                    {n.is_important ? <Megaphone size={16} /> : <Bell size={16} />}
                   </div>
                   <div>
                     <div className="notice-title">

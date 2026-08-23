@@ -72,7 +72,7 @@ export default function MyComplaintsPage() {
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
         ) : q.data?.items.length ? (
           <>
-            <ComplaintTable items={q.data.items} />
+            <ComplaintTable items={q.data.items} token={token!} />
             <Pagination page={page} pageSize={PAGE_SIZE} total={q.data.total} onChange={setPage} />
           </>
         ) : (
