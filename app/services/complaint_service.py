@@ -16,6 +16,7 @@ from app.models.category import Category
 from app.models.complaint import Complaint
 from app.models.complaint_history import ComplaintHistory
 from app.models.user import User
+from app.schemas.complaint import ComplaintOut
 from app.services import settings_service
 from app.services.overdue_service import overdue_condition
 from app.services.storage_service import storage_service
@@ -31,6 +32,21 @@ _PRIORITY_ORDER: dict[ComplaintPriority, int] = {
     ComplaintPriority.MEDIUM: 1,
     ComplaintPriority.LOW: 2,
 }
+
+
+def complaint_to_out(complaint: Complaint) -> ComplaintOut:
+    return ComplaintOut(
+        id=complaint.id,
+        description=complaint.description,
+        photo_url=f"/api/v1/complaints/{complaint.id}/photo" if complaint.photo_path else None,
+        priority=complaint.priority,
+        status=complaint.status,
+        created_at=complaint.created_at,
+        updated_at=complaint.updated_at,
+        resolved_at=complaint.resolved_at,
+        resident=complaint.resident,
+        category=complaint.category,
+    )
 
 
 def _get_category_or_404(db: Session, category_id: uuid.UUID) -> Category:
@@ -178,7 +194,10 @@ def update_status(
     new_status: ComplaintStatus,
     note: str | None,
 ) -> tuple[Complaint, ComplaintStatus]:
-    old_status = complaint.status
+    locked = db.execute(
+        select(Complaint).where(Complaint.id == complaint.id).with_for_update()
+    ).scalar_one()
+    old_status = locked.status
     if new_status not in ALLOWED_TRANSITIONS[old_status]:
         raise InvalidTransitionError(
             f"cannot_transition_{old_status.value.lower()}_to_{new_status.value.lower()}"
@@ -187,20 +206,20 @@ def update_status(
         if note is None or not note.strip():
             raise ValidationError("note_required_for_direct_resolution")
     cleaned_note = note.strip() if isinstance(note, str) else note
-    complaint.status = new_status
+    locked.status = new_status
     if new_status == ComplaintStatus.RESOLVED:
-        complaint.resolved_at = datetime.now(timezone.utc)
+        locked.resolved_at = datetime.now(timezone.utc)
     db.add(
         ComplaintHistory(
-            complaint_id=complaint.id,
+            complaint_id=locked.id,
             status=new_status,
             actor_id=actor.id,
             note=cleaned_note,
         )
     )
     db.commit()
-    db.refresh(complaint)
-    return complaint, old_status
+    db.refresh(locked)
+    return locked, old_status
 
 
 def list_history(db: Session, complaint: Complaint) -> list[ComplaintHistory]:
