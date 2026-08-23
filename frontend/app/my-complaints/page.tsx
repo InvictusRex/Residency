@@ -10,6 +10,8 @@ import { Shell } from '@/components/shell'
 import { ComplaintCards } from '@/components/complaints/complaint-cards'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Pagination } from '@/components/shared/pagination'
+import AnimatedNumber from '@/components/animations/AnimatedNumber'
+import BlurText from '@/components/animations/BlurText'
 
 const PAGE_SIZE = 12
 
@@ -55,7 +57,7 @@ export default function MyComplaintsPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Resident Services</p>
-          <h1>My Complaints</h1>
+          <BlurText text="My Complaints" className="rb-title" />
           <p className="subheading">Track and manage your submitted facility issues.</p>
         </div>
         <button className="primary" onClick={() => router.push('/my-complaints/new')}>
@@ -114,9 +116,11 @@ export default function MyComplaintsPage() {
 
 function StatCard({ label, value, yellow, lime }: { label: string; value: number; yellow?: boolean; lime?: boolean }) {
   return (
-    <div className={`stat-card${yellow ? ' yellow' : ''}${lime ? ' lime' : ''}`}>
+    <div className="stat-card${yellow ? ' yellow' : ''}${lime ? ' lime' : ''}">
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong>
+        <AnimatedNumber value={value} />
+      </strong>
     </div>
   )
 }

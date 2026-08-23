@@ -12,6 +12,7 @@ import { Icon } from '@/components/ui/icon'
 import { LoadingState } from '@/components/shared/states'
 import { StatusActions } from '@/components/complaints/status-actions'
 import { useComplaintPriorityMutation } from '@/components/complaints/use-complaint-mutations'
+import AnimatedContent from '@/components/animations/AnimatedContent'
 
 export default function ComplaintDetailPage() {
   const { token, user } = useAuth()
@@ -58,6 +59,7 @@ export default function ComplaintDetailPage() {
         Back to {isAdmin ? 'Complaints' : 'My Complaints'}
       </button>
 
+      <AnimatedContent distance={24} duration={0.6} threshold={0.05}>
       <div className="page-heading">
         <div>
           <p className="eyebrow">Ticket #{c.id.slice(0, 8).toUpperCase()}</p>
@@ -72,6 +74,7 @@ export default function ComplaintDetailPage() {
         </div>
         {isAdmin && <StatusActions complaintId={c.id} current={c.status} token={token!} />}
       </div>
+      </AnimatedContent>
 
       <div className="detail-grid">
         <div style={{ display: 'grid', gap: 16 }}>

@@ -9,6 +9,7 @@ import { Shell } from '@/components/shell'
 import { ComplaintTable } from '@/components/complaints/complaint-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Pagination } from '@/components/shared/pagination'
+import BlurText from '@/components/animations/BlurText'
 
 const PAGE_SIZE = 20
 
@@ -57,7 +58,7 @@ export default function AdminComplaintsPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Admin Control Center</p>
-          <h1>Complaint Management</h1>
+          <BlurText text="Complaint Management" className="rb-title" />
           <p className="subheading">Monitor and resolve resident issues with high-visibility tracking.</p>
         </div>
       </div>

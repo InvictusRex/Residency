@@ -8,6 +8,9 @@ import { Shell } from '@/components/shell'
 import { ErrorState, LoadingState } from '@/components/shared/states'
 import { Icon } from '@/components/ui/icon'
 import { formatDate } from '@/components/ui/badge'
+import AnimatedContent from '@/components/animations/AnimatedContent'
+import AnimatedNumber from '@/components/animations/AnimatedNumber'
+import BlurText from '@/components/animations/BlurText'
 
 const STATUS_META = [
   { key: 'OPEN', label: 'Open', color: '#84cc16' },
@@ -26,13 +29,15 @@ export default function DashboardPage() {
 
   return (
     <Shell title="Dashboard">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">Live Data Feed // Residency Status</p>
-          <h1>Operations Hub</h1>
-          <p className="subheading">Operational metrics from the Residency backend.</p>
+      <AnimatedContent distance={24} duration={0.6} threshold={0.05}>
+        <div className="page-heading">
+          <div>
+            <p className="eyebrow">Live Data Feed // Residency Status</p>
+            <BlurText text="Operations Hub" className="rb-title" />
+            <p className="subheading">Operational metrics from the Residency backend.</p>
+          </div>
         </div>
-      </div>
+      </AnimatedContent>
       {q.isPending ? (
         <LoadingState />
       ) : q.error ? (
@@ -123,7 +128,9 @@ function Metric({
         <Icon name={icon} size={26} fill={accent || warn} />
       </div>
       <span>{label}</span>
-      <strong style={warn ? { color: 'var(--lime-2)' } : undefined}>{value}</strong>
+      <strong style={warn ? { color: 'var(--lime-2)' } : undefined}>
+        <AnimatedNumber value={value} />
+      </strong>
       <small>Backend response</small>
     </div>
   )

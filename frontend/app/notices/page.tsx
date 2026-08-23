@@ -9,6 +9,7 @@ import { Shell } from '@/components/shell'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Pagination } from '@/components/shared/pagination'
 import { formatDate } from '@/components/ui/badge'
+import BlurText from '@/components/animations/BlurText'
 
 const PAGE_SIZE = 20
 
@@ -26,7 +27,7 @@ export default function NoticesPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Community Updates</p>
-          <h1>Notices</h1>
+          <BlurText text="Notices" className="rb-title" />
           <p className="subheading">Official announcements from your community. Important notices are pinned first.</p>
         </div>
       </div>
