@@ -47,39 +47,53 @@ See [docs/architecture.md](docs/architecture.md) for details.
 
 ## Project Structure
 
+The repository is a monorepo with the backend under `backend/` and the Next.js frontend under
+`frontend/` (added separately). Project-level configuration and deployment files live at the root.
+
 ```
 .
-├── app/
-│   ├── main.py               # App factory, CORS, exception handlers
-│   ├── seed.py               # Dev seeding script
-│   ├── api/
-│   │   ├── router.py         # Aggregates route modules under /api/v1
-│   │   └── routes/           # auth, users, categories, complaints, notices,
-│   │                         # dashboard, admin_settings, health
-│   ├── core/
-│   │   ├── config.py         # pydantic-settings, reads .env
-│   │   ├── dependencies.py   # get_current_user, require_admin, require_resident
-│   │   ├── enums.py          # Role, ComplaintStatus, ComplaintPriority
-│   │   ├── exceptions.py     # AppError hierarchy
-│   │   └── security.py       # argon2 hashing, JWT encode/decode
-│   ├── db/
-│   │   ├── base.py           # Declarative Base
-│   │   └── session.py        # Engine + SessionLocal + get_db dependency
-│   ├── models/               # User, Category, Complaint, ComplaintHistory,
-│   │                         # Notice, SystemSetting
-│   ├── schemas/              # Pydantic request/response models
-│   └── services/             # Business logic + storage/notification services
-├── alembic/
-│   ├── env.py                # Reads DATABASE_URL from app settings
-│   └── versions/             # Migration scripts
-├── tests/
-│   └── conftest.py           # Creates/migrates/drops smt_test database
+├── backend/                    # Backend source (Python package rooted here)
+│   ├── app/                    # The application source package
+│   │   ├── main.py             # App factory, CORS, exception handlers
+│   │   ├── seed.py             # Dev seeding script
+│   │   ├── api/
+│   │   │   ├── router.py       # Aggregates route modules under /api/v1
+│   │   │   └── routes/         # auth, users, categories, complaints, notices,
+│   │   │                       # dashboard, admin_settings, health
+│   │   ├── core/
+│   │   │   ├── config.py       # pydantic-settings, reads .env
+│   │   │   ├── dependencies.py # get_current_user, require_admin, require_resident
+│   │   │   ├── enums.py        # Role, ComplaintStatus, ComplaintPriority
+│   │   │   ├── exceptions.py   # AppError hierarchy
+│   │   │   └── security.py     # argon2 hashing, JWT encode/decode
+│   │   ├── db/
+│   │   │   ├── base.py         # Declarative Base
+│   │   │   └── session.py      # Engine + SessionLocal + get_db dependency
+│   │   ├── models/             # User, Category, Complaint, ComplaintHistory,
+│   │   │                       # Notice, SystemSetting
+│   │   ├── schemas/            # Pydantic request/response models
+│   │   └── services/           # Business logic + storage/notification services
+│   ├── alembic/
+│   │   ├── env.py              # Reads DATABASE_URL from app settings
+│   │   └── versions/           # Migration scripts
+│   └── tests/
+│       └── conftest.py         # Creates/migrates/drops smt_test database
+├── frontend/                   # Next.js frontend (added separately)
 ├── alembic.ini
 ├── docker-compose.yml
 ├── Dockerfile
 ├── requirements.txt
-└── .env.example
+├── pyproject.toml
+├── .env.example
+├── .github/
+│   └── workflows/backend-ci.yml
+└── docs/
 ```
+
+All backend commands below are run from the repository root. The `backend/` directory is placed on
+the Python path automatically for pytest (`pythonpath` in `pyproject.toml`), Alembic (`alembic/env.py`),
+and the Docker image (`PYTHONPATH`); for a local uvicorn or seed run, set `PYTHONPATH=backend`
+(or run the command with the backend venv activated from inside `backend/`).
 
 ## Environment Setup
 
@@ -132,15 +146,21 @@ The backend container automatically runs `alembic upgrade head` before starting 
 
 ## Installation (Local Python)
 
+All commands run from the repository root. Python resolves `app` via `PYTHONPATH=backend`:
+
 ```
 py -3.12 -m venv .venv
 .venv\Scripts\activate          # Windows
 pip install -r requirements.txt
 copy .env.example .env
 alembic upgrade head
+$env:PYTHONPATH="backend"       # PowerShell (bash: export PYTHONPATH=backend)
 python -m app.seed              # add --with-sample-data for demo complaints/notices
 uvicorn app.main:app --reload --port 8000
 ```
+
+`alembic`, `pytest`, and Docker set up the import path themselves; only a direct `python -m app.*` or
+`uvicorn` run needs the `PYTHONPATH=backend` export above.
 
 ## Migrations
 
@@ -150,7 +170,7 @@ Apply all migrations:
 alembic upgrade head
 ```
 
-Alembic reads its connection string from `DATABASE_URL` via `app.core.config.settings` (see `alembic/env.py`), so migrations target whatever environment is active.
+Alembic reads its connection string from `DATABASE_URL` via `app.core.config.settings` (see `backend/alembic/env.py`), so migrations target whatever environment is active.
 
 To generate a new migration after changing models:
 
@@ -174,6 +194,7 @@ With `--with-sample-data`, it also creates three sample complaints (one per stat
 ## Running the Server
 
 ```
+$env:PYTHONPATH="backend"       # PowerShell (bash: export PYTHONPATH=backend)
 uvicorn app.main:app --reload --port 8000
 ```
 

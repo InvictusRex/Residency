@@ -384,7 +384,8 @@
     "e2e_verification": "done: 64/64 checks pass against live server",
     "pytest": "102 passed",
     "final_qa_audit": "done: 137 pytest passed, 68/68 e2e, docker verified",
-    "ci_preparation": "done: GitHub Actions workflow added; conftest parameterized via TEST_DATABASE_URL; 137 passed locally on both default and override paths"
+    "ci_preparation": "done: GitHub Actions workflow added; conftest parameterized via TEST_DATABASE_URL; 137 passed locally on both default and override paths",
+    "monorepo_restructure": "done: app/, alembic/, tests/ moved to backend/ via git mv; alembic.ini script_location -> backend/alembic; env.py prepends backend to sys.path; pyproject pythonpath+testpaths updated; Dockerfile mirrors layout under /app/backend with PYTHONPATH; verified 137 pytest + alembic head + isolated docker build/migrate/seed/photo-persistence"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",

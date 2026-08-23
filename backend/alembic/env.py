@@ -1,6 +1,10 @@
 from logging.config import fileConfig
+from pathlib import Path
+import sys
 
 from alembic import context
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import settings
 from app.db.base import Base

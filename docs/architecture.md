@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the structural design of the Society Maintenance Tracker backend: layering, dependency injection, abstractions, transaction strategy, error model, and configuration management.
+This document describes the structural design of the Society Maintenance Tracker backend: layering, dependency injection, abstractions, transaction strategy, error model, and configuration management. All module paths below are relative to the `backend/` directory (e.g. `app/services/...`).
 
 ## Layering
 
@@ -82,6 +82,6 @@ Configuration lives in `app/core/config.py` as a pydantic-settings `Settings` cl
 - Reads a `.env` file (UTF-8) with environment variables taking precedence.
 - Cached at import time via `@lru_cache` and exposed as the module-level `settings` singleton.
 - Typed coercion throughout: ints for sizes/thresholds/durations, bools for flags, `Literal` for `ENVIRONMENT`, and a custom validator that splits `CORS_ORIGINS` on commas into a list.
-- Alembic shares this same settings object (`alembic/env.py` sets `sqlalchemy.url` from `settings.DATABASE_URL`), so migrations always target the active environment's database.
+- Alembic shares this same settings object (`backend/alembic/env.py` sets `sqlalchemy.url` from `settings.DATABASE_URL`), so migrations always target the active environment's database.
 
 Runtime-editable configuration is deliberately separated from env config: the overdue threshold is stored in the `system_settings` table and editable by admins, with the `OVERDUE_THRESHOLD_DAYS` env value used only as a fallback when the row is absent or unparseable.

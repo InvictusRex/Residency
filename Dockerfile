@@ -5,9 +5,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app/ app/
-COPY alembic/ alembic/
+COPY backend/app/ /app/backend/app/
+COPY backend/alembic/ /app/backend/alembic/
 COPY alembic.ini .
+
+ENV PYTHONPATH=/app/backend
 
 EXPOSE 8000
 

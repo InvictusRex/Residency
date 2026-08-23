@@ -1,6 +1,6 @@
 # Database
 
-The schema is managed by Alembic (initial revision: `alembic/versions/2026_08_23_initial_schema.py`) and consists of six tables. All primary keys are UUIDs generated client-side (`uuid4`), except `system_settings`, which is keyed by a string.
+The schema is managed by Alembic (initial revision: `backend/alembic/versions/2026_08_23_initial_schema.py`) and consists of six tables. All primary keys are UUIDs generated client-side (`uuid4`), except `system_settings`, which is keyed by a string.
 
 ## Conventions
 
@@ -137,4 +137,4 @@ alembic revision --autogenerate -m "message"          # diff models against DB
 alembic downgrade -1                                  # roll back last revision
 ```
 
-`alembic/env.py` imports `app.core.config.settings` and points `sqlalchemy.url` at the active `DATABASE_URL`, so migrations run against whichever database the environment selects. Tests use this machinery too: `tests/conftest.py` recreates a dedicated `smt_test` database and runs `upgrade head` before each pytest session.
+`backend/alembic/env.py` imports `app.core.config.settings` and points `sqlalchemy.url` at the active `DATABASE_URL`, so migrations run against whichever database the environment selects. Tests use this machinery too: `backend/tests/conftest.py` recreates a dedicated `smt_test` database and runs `upgrade head` before each pytest session.
