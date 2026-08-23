@@ -50,6 +50,9 @@ def create_complaint(
     photo: tuple[bytes, str, str] | None,
 ) -> Complaint:
     _get_category_or_404(db, category_id)
+    cleaned_description = description.strip()
+    if not cleaned_description:
+        raise ValidationError("description_empty")
     stored = None
     if photo is not None:
         data, filename, content_type = photo
@@ -60,7 +63,7 @@ def create_complaint(
     complaint = Complaint(
         resident_id=resident.id,
         category_id=category_id,
-        description=description,
+        description=cleaned_description,
         photo_path=stored.storage_path if stored else None,
         priority=ComplaintPriority.LOW,
         status=ComplaintStatus.OPEN,
@@ -116,6 +119,8 @@ def list_complaints(
         filters.append(Complaint.status == status)
     if priority is not None:
         filters.append(Complaint.priority == priority)
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise ValidationError("invalid_date_range")
     if date_from is not None:
         filters.append(Complaint.created_at >= datetime.combine(date_from, time.min, tzinfo=timezone.utc))
     if date_to is not None:
@@ -123,9 +128,11 @@ def list_complaints(
             Complaint.created_at
             < datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=timezone.utc)
         )
-    if overdue:
-        threshold = settings_service.get_overdue_threshold(db)
+    threshold = settings_service.get_overdue_threshold(db)
+    if overdue is True:
         filters.append(overdue_condition(threshold))
+    elif overdue is False:
+        filters.append(~overdue_condition(threshold))
 
     count_stmt: Select[tuple[int]] = select(func.count()).select_from(Complaint).where(*filters)
     total: int = db.execute(count_stmt).scalar_one()
@@ -137,7 +144,6 @@ def list_complaints(
         .limit(limit)
         .offset(offset)
     )
-    threshold = settings_service.get_overdue_threshold(db)
     overdue_case = case((overdue_condition(threshold), 1), else_=0)
     priority_case = case(
         (Complaint.priority == ComplaintPriority.HIGH, 0),
@@ -148,7 +154,9 @@ def list_complaints(
         stmt = stmt.order_by(Complaint.created_at.asc())
     elif sort == "priority":
         stmt = stmt.order_by(priority_case.asc(), Complaint.created_at.desc())
-    elif sort == "newest" or user.role != Role.ADMIN:
+    elif sort == "newest":
+        stmt = stmt.order_by(Complaint.created_at.desc())
+    elif user.role != Role.ADMIN:
         stmt = stmt.order_by(Complaint.created_at.desc())
     else:
         stmt = stmt.order_by(overdue_case.desc(), priority_case.asc(), Complaint.created_at.desc())
@@ -178,6 +186,7 @@ def update_status(
     if old_status == ComplaintStatus.OPEN and new_status == ComplaintStatus.RESOLVED:
         if note is None or not note.strip():
             raise ValidationError("note_required_for_direct_resolution")
+    cleaned_note = note.strip() if isinstance(note, str) else note
     complaint.status = new_status
     if new_status == ComplaintStatus.RESOLVED:
         complaint.resolved_at = datetime.now(timezone.utc)
@@ -186,7 +195,7 @@ def update_status(
             complaint_id=complaint.id,
             status=new_status,
             actor_id=actor.id,
-            note=note,
+            note=cleaned_note,
         )
     )
     db.commit()

@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.enums import Role
@@ -25,7 +26,9 @@ def list_categories(db: Session, current_user: User) -> list[Category]:
 
 def create_category(db: Session, data: CategoryCreateRequest) -> Category:
     existing: Category | None = (
-        db.query(Category).filter(Category.name == data.name.strip()).first()
+        db.query(Category)
+        .filter(func.lower(Category.name) == data.name.strip().lower())
+        .first()
     )
     if existing is not None:
         raise ConflictError("category_already_exists")
@@ -48,7 +51,10 @@ def update_category(
         stripped_name = new_name.strip()
         duplicate: Category | None = (
             db.query(Category)
-            .filter(Category.name == stripped_name, Category.id != category.id)
+            .filter(
+                func.lower(Category.name) == stripped_name.lower(),
+                Category.id != category.id,
+            )
             .first()
         )
         if duplicate is not None:

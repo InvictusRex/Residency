@@ -391,5 +391,24 @@
     "route modules corrected to relative paths so api_router prefix /api/v1 is not doubled",
     "dev JWT default secret extended to >=32 bytes (InsecureKeyLengthWarning resolved)",
     "alembic.ini path_separator set (removes deprecation warning)"
-  ]
+  ],
+  "security_review": {
+    "date": "2026-08-23",
+    "holes_found_and_fixed": [
+      "uploads accepted arbitrary bytes when mime+extension agreed - now magic-byte sniffed (jpeg/png/webp), mismatch -> file_content_mismatch 422",
+      "whitespace-only complaint descriptions passed min_length - now stripped and rejected (description_empty)",
+      "category uniqueness was case-sensitive - create/rename now case-insensitive checks",
+      "date_from > date_to silently returned empty results - now 422 invalid_date_range",
+      "overdue=false was a no-op - now explicit tri-state filter (true=only overdue, false=only not-overdue)",
+      "sort param silently ignored for residents - residents can now sort oldest/priority/newest too",
+      "status-change notes stored with surrounding whitespace - now stripped",
+      "overdue threshold fetched twice per admin listing - now fetched once"
+    ],
+    "verified_safe_already": [
+      "login errors identical for unknown email vs wrong password; inactive users rejected",
+      "foreign complaint ids return 404 not 403 for residents (no existence leak)",
+      "jwt sub garbage/uuid-parse failures handled; role always re-derived from DB",
+      "storage delete_file path-traversal guarded; upload filenames regenerated as uuids"
+    ]
+  }
 }

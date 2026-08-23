@@ -19,6 +19,7 @@ _ERROR_UNSUPPORTED_FILE_TYPE: str = "unsupported_file_type"
 _ERROR_FILE_EXTENSION_MISMATCH: str = "file_extension_mismatch"
 _ERROR_FILE_TOO_LARGE: str = "file_too_large"
 _ERROR_EMPTY_FILE: str = "empty_file"
+_ERROR_CONTENT_MISMATCH: str = "file_content_mismatch"
 
 _UPLOADS_URL_PREFIX: str = "/uploads/"
 _UPLOADS_URL_PREFIX_POSIX: str = "/uploads"
@@ -38,10 +39,26 @@ class StorageService:
             base_dir = Path(settings.UPLOAD_DIR) / "complaints"
         self._base_dir: Path = base_dir.resolve()
 
+    @staticmethod
+    def _sniff_image_format(data: bytes) -> str | None:
+        if data[:3] == b"\xff\xd8\xff":
+            return "image/jpeg"
+        if data[:8] == b"\x89PNG\r\n\x1a\n":
+            return "image/png"
+        if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            return "image/webp"
+        return None
+
     def save_file(self, data: bytes, original_filename: str, content_type: str) -> StoredFile:
         canonical_ext = IMAGE_CONTENT_TYPES.get(content_type)
         if canonical_ext is None:
             raise ValueError(_ERROR_UNSUPPORTED_FILE_TYPE)
+
+        sniffed = self._sniff_image_format(data)
+        if sniffed is None:
+            raise ValueError(_ERROR_CONTENT_MISMATCH)
+        if sniffed != content_type:
+            raise ValueError(_ERROR_CONTENT_MISMATCH)
 
         extension = PurePosixPath(original_filename).suffix.lower()
         allowed_extensions: frozenset[str] = (
