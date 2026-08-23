@@ -7,6 +7,8 @@ from app.core.enums import ComplaintStatus, Role
 
 
 class ActorBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     name: str
     role: Role

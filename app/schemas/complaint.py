@@ -8,12 +8,16 @@ from app.schemas.common import PaginatedResponse
 
 
 class ResidentBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     name: str
     email: EmailStr
 
 
 class CategoryBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     name: str
 
