@@ -33,3 +33,4 @@ class ComplaintHistory(Base):
     )
 
     complaint: Mapped["Complaint"] = relationship(back_populates="history")
+    actor: Mapped["User"] = relationship(foreign_keys=[actor_id], lazy="joined")
