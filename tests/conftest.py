@@ -179,3 +179,11 @@ def complaint_factory(client, category_factory):
         return resp.json()
 
     return _create
+
+@pytest.fixture(autouse=True)
+def _reset_auth_rate_limiter():
+    from app.api.routes.auth import auth_rate_limiter
+
+    auth_rate_limiter.reset()
+    yield
+    auth_rate_limiter.reset()
