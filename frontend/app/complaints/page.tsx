@@ -3,19 +3,27 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api, buildComplaintQuery } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
-import type { Priority, Sort, Status } from '@/lib/types'
+import type { Complaint, ComplaintQuery, Priority, Sort, Status } from '@/lib/types'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { ComplaintTable } from '@/components/complaints/complaint-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Pagination } from '@/components/shared/pagination'
+import { Icon } from '@/components/ui/icon'
+import { useToast } from '@/components/ui/toast'
 import BlurText from '@/components/animations/BlurText'
 
 const PAGE_SIZE = 20
 
+function csvEscape(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`
+}
+
 export default function AdminComplaintsPage() {
   const { token } = useAuth()
+  const toast = useToast()
   const [page, setPage] = useState(1)
+  const [exporting, setExporting] = useState(false)
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState<Status | ''>('')
   const [priority, setPriority] = useState<Priority | ''>('')
@@ -28,17 +36,19 @@ export default function AdminComplaintsPage() {
   const categories = useQuery({ queryKey: queryKeys.categories, queryFn: () => api.categories(token!) })
   const settings = useQuery({ queryKey: queryKeys.settings, queryFn: () => api.settings(token!) })
 
-  const qs = buildComplaintQuery({
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE,
-    category_id: categoryId || undefined,
-    status: status || undefined,
-    priority: priority || undefined,
-    overdue: overdue === '' ? undefined : overdue === 'true',
-    sort,
-    date_from: dateFrom || undefined,
-    date_to: dateTo || undefined,
-  })
+  function currentParams(): ComplaintQuery {
+    return {
+      category_id: categoryId || undefined,
+      status: status || undefined,
+      priority: priority || undefined,
+      overdue: overdue === '' ? undefined : overdue === 'true',
+      sort,
+      date_from: dateFrom || undefined,
+      date_to: dateTo || undefined,
+    }
+  }
+
+  const qs = buildComplaintQuery({ ...currentParams(), limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE })
   const q = useQuery({
     queryKey: queryKeys.complaints(`admin${qs}`),
     queryFn: () => api.complaints(token!, qs),
@@ -53,6 +63,51 @@ export default function AdminComplaintsPage() {
     setPage(1)
   }
 
+  async function exportCsv() {
+    if (!token) return
+    setExporting(true)
+    try {
+      const all: Complaint[] = []
+      const limit = 100
+      for (let offset = 0; ; offset += limit) {
+        const res = await api.complaints(token, buildComplaintQuery({ ...currentParams(), limit, offset }))
+        all.push(...res.items)
+        if (offset + limit >= res.total || res.items.length === 0) break
+      }
+      if (!all.length) {
+        toast.toast('info', 'No complaints to export.')
+        return
+      }
+      const header = ['ID', 'Category', 'Resident', 'Resident Email', 'Description', 'Status', 'Priority', 'Created At', 'Resolved At']
+      const rows = all.map((c) => [
+        c.id,
+        c.category.name,
+        c.resident.name,
+        c.resident.email,
+        c.description,
+        c.status,
+        c.priority,
+        c.created_at,
+        c.resolved_at ?? '',
+      ])
+      const csv = [header, ...rows].map((r) => r.map((v) => csvEscape(String(v))).join(',')).join('\r\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `complaints-${new Date().toISOString().slice(0, 10)}.csv`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast.toast('success', `Exported ${all.length} complaints.`)
+    } catch {
+      toast.toast('error', 'Export failed. Please try again.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <Shell title="Complaints">
       <div className="page-heading">
@@ -61,6 +116,10 @@ export default function AdminComplaintsPage() {
           <BlurText text="Complaint Management" className="rb-title" />
           <p className="subheading">Monitor and resolve resident issues with high-visibility tracking.</p>
         </div>
+        <button className="outline" onClick={exportCsv} disabled={exporting}>
+          <Icon name="download" size={18} />
+          {exporting ? 'Exporting…' : 'Export CSV'}
+        </button>
       </div>
       <section className="panel">
         <div className="panel-header">
