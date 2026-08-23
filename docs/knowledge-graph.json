@@ -38,42 +38,128 @@
     "seed": {
       "command": "python -m app.seed",
       "accounts": {
-        "admin": { "email": "admin@example.com", "password": "Admin123!ChangeMe" },
-        "resident": { "email": "resident@example.com", "password": "Resident123!ChangeMe" }
+        "admin": {
+          "email": "admin@example.com",
+          "password": "Admin123!ChangeMe"
+        },
+        "resident": {
+          "email": "resident@example.com",
+          "password": "Resident123!ChangeMe"
+        }
       },
       "warning": "DEV ONLY credentials"
     }
   },
   "entities": {
     "User": {
-      "fields": ["id uuid PK", "name", "email unique", "password_hash", "role enum RESIDENT|ADMIN", "is_active", "created_at", "updated_at"]
+      "fields": [
+        "id uuid PK",
+        "name",
+        "email unique",
+        "password_hash",
+        "role enum RESIDENT|ADMIN",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
     },
     "Category": {
-      "fields": ["id uuid PK", "name unique", "description nullable", "is_active", "created_at", "updated_at"]
+      "fields": [
+        "id uuid PK",
+        "name unique",
+        "description nullable",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
     },
     "Complaint": {
-      "fields": ["id uuid PK", "resident_id FK users", "category_id FK categories", "description text", "photo_path nullable", "priority enum default LOW", "status enum default OPEN", "created_at indexed", "updated_at", "resolved_at nullable"],
-      "indexes": ["resident_id", "category_id", "status", "priority", "created_at"]
+      "fields": [
+        "id uuid PK",
+        "resident_id FK users",
+        "category_id FK categories",
+        "description text",
+        "photo_path nullable",
+        "priority enum default LOW",
+        "status enum default OPEN",
+        "created_at indexed",
+        "updated_at",
+        "resolved_at nullable"
+      ],
+      "indexes": [
+        "resident_id",
+        "category_id",
+        "status",
+        "priority",
+        "created_at"
+      ]
     },
     "ComplaintHistory": {
-      "fields": ["id uuid PK", "complaint_id FK complaints CASCADE", "status enum", "actor_id FK users", "note nullable", "created_at"],
-      "indexes": ["complaint_id"],
-      "rules": ["IMMUTABLE append-only", "complaint creation inserts initial OPEN row"]
+      "fields": [
+        "id uuid PK",
+        "complaint_id FK complaints CASCADE",
+        "status enum",
+        "actor_id FK users",
+        "note nullable",
+        "created_at"
+      ],
+      "indexes": [
+        "complaint_id"
+      ],
+      "rules": [
+        "IMMUTABLE append-only",
+        "complaint creation inserts initial OPEN row"
+      ]
     },
     "Notice": {
-      "fields": ["id uuid PK", "title", "content", "is_important indexed", "created_by FK users", "created_at", "updated_at"],
-      "indexes": ["is_important", "composite (is_important, created_at)"]
+      "fields": [
+        "id uuid PK",
+        "title",
+        "content",
+        "is_important indexed",
+        "created_by FK users",
+        "created_at",
+        "updated_at"
+      ],
+      "indexes": [
+        "is_important",
+        "composite (is_important, created_at)"
+      ]
     },
     "SystemSetting": {
-      "fields": ["key string PK", "value string", "updated_at"]
+      "fields": [
+        "key string PK",
+        "value string",
+        "updated_at"
+      ]
     }
   },
   "relations": [
-    { "from": "Complaint.resident_id", "to": "User.id", "cascade": "RESTRICT" },
-    { "from": "Complaint.category_id", "to": "Category.id", "cascade": "RESTRICT" },
-    { "from": "ComplaintHistory.complaint_id", "to": "Complaint.id", "cascade": "CASCADE" },
-    { "from": "ComplaintHistory.actor_id", "to": "User.id", "cascade": "RESTRICT" },
-    { "from": "Notice.created_by", "to": "User.id", "cascade": "RESTRICT" }
+    {
+      "from": "Complaint.resident_id",
+      "to": "User.id",
+      "cascade": "RESTRICT"
+    },
+    {
+      "from": "Complaint.category_id",
+      "to": "Category.id",
+      "cascade": "RESTRICT"
+    },
+    {
+      "from": "ComplaintHistory.complaint_id",
+      "to": "Complaint.id",
+      "cascade": "CASCADE"
+    },
+    {
+      "from": "ComplaintHistory.actor_id",
+      "to": "User.id",
+      "cascade": "RESTRICT"
+    },
+    {
+      "from": "Notice.created_by",
+      "to": "User.id",
+      "cascade": "RESTRICT"
+    }
   ],
   "services": {
     "auth_service": "Registration, login with argon2 verification, JWT issue/verify, current-user resolution.",
@@ -86,80 +172,224 @@
     "settings_service": "Read/write key-value rows in system_settings incl. validation of overdue threshold range 1..365."
   },
   "routes": [
-    { "method": "POST", "path": "/api/v1/auth/register", "purpose": "Register new user" },
-    { "method": "POST", "path": "/api/v1/auth/login", "purpose": "JSON login, returns JWT bearer token" },
-    { "method": "GET", "path": "/api/v1/auth/me", "purpose": "Current authenticated user" },
-    { "method": "PATCH", "path": "/api/v1/users/me", "purpose": "Update own profile" },
-
-    { "method": "GET", "path": "/api/v1/categories", "purpose": "List categories" },
-    { "method": "POST", "path": "/api/v1/categories", "purpose": "Create category (admin)" },
-    { "method": "PATCH", "path": "/api/v1/categories/{id}", "purpose": "Update category (admin)" },
-    { "method": "DELETE", "path": "/api/v1/categories/{id}", "purpose": "Soft-delete via is_active=false when referenced (admin)" },
-
-    { "method": "POST", "path": "/api/v1/complaints", "purpose": "Create complaint (multipart form with optional photo)" },
-    { "method": "GET", "path": "/api/v1/complaints", "purpose": "List complaints; filters: category_id,status,priority,date_from,date_to,overdue,limit,offset,sort; resident sees own only" },
-    { "method": "GET", "path": "/api/v1/complaints/{id}", "purpose": "Get single complaint (404 if foreign for resident)" },
-    { "method": "PATCH", "path": "/api/v1/complaints/{id}/status", "purpose": "Transition status per lifecycle; OPEN->RESOLVED requires admin note; RESOLVED immutable; writes history" },
-    { "method": "PATCH", "path": "/api/v1/complaints/{id}/priority", "purpose": "Set priority (admin); no history entry" },
-    { "method": "GET", "path": "/api/v1/complaints/{id}/history", "purpose": "Status-change history (append-only)" },
-
-    { "method": "GET", "path": "/api/v1/notices", "purpose": "List notices ordered is_important desc, created_at desc" },
-    { "method": "POST", "path": "/api/v1/notices", "purpose": "Create notice (admin); email blast if important" },
-    { "method": "GET", "path": "/api/v1/notices/{id}", "purpose": "Get single notice" },
-    { "method": "PATCH", "path": "/api/v1/notices/{id}", "purpose": "Update notice (admin); toggling importance sends no email" },
-    { "method": "DELETE", "path": "/api/v1/notices/{id}", "purpose": "Delete notice (admin)" },
-
-    { "method": "GET", "path": "/api/v1/dashboard/summary", "purpose": "Dashboard aggregate stats" },
-    { "method": "GET", "path": "/api/v1/admin/settings", "purpose": "View system settings (admin)" },
-    { "method": "PATCH", "path": "/api/v1/admin/settings/overdue-threshold", "purpose": "Edit overdue_threshold_days (range 1..365, admin)" },
-
-    { "method": "GET", "path": "/health", "purpose": "Liveness probe" },
-    { "method": "GET", "path": "/health/db", "purpose": "Database connectivity probe" }
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "purpose": "Register new user"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "purpose": "JSON login, returns JWT bearer token"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "purpose": "Current authenticated user"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/users/me",
+      "purpose": "Update own profile"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/categories",
+      "purpose": "List categories"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/categories",
+      "purpose": "Create category (admin)"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/categories/{id}",
+      "purpose": "Update category (admin)"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/categories/{id}",
+      "purpose": "Soft-delete via is_active=false when referenced (admin)"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/complaints",
+      "purpose": "Create complaint (multipart form with optional photo)"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/complaints",
+      "purpose": "List complaints; filters: category_id,status,priority,date_from,date_to,overdue,limit,offset,sort; resident sees own only"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/complaints/{id}",
+      "purpose": "Get single complaint (404 if foreign for resident)"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/complaints/{id}/status",
+      "purpose": "Transition status per lifecycle; OPEN->RESOLVED requires admin note; RESOLVED immutable; writes history"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/complaints/{id}/priority",
+      "purpose": "Set priority (admin); no history entry"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/complaints/{id}/history",
+      "purpose": "Status-change history (append-only)"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notices",
+      "purpose": "List notices ordered is_important desc, created_at desc"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notices",
+      "purpose": "Create notice (admin); email blast if important"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notices/{id}",
+      "purpose": "Get single notice"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/notices/{id}",
+      "purpose": "Update notice (admin); toggling importance sends no email"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/notices/{id}",
+      "purpose": "Delete notice (admin)"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard/summary",
+      "purpose": "Dashboard aggregate stats"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/settings",
+      "purpose": "View system settings (admin)"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/settings/overdue-threshold",
+      "purpose": "Edit overdue_threshold_days (range 1..365, admin)"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "purpose": "Liveness probe"
+    },
+    {
+      "method": "GET",
+      "path": "/health/db",
+      "purpose": "Database connectivity probe"
+    }
   ],
   "waves": {
     "wave_1": {
       "title": "Tooling + knowledge graph",
       "agent_owner": "docs/planner agent (done now)",
-      "file_scope": ["pyproject.toml", "requirements.txt", ".gitignore", ".env.example", "docker-compose.yml", "Dockerfile", "alembic.ini", "docs/knowledge-graph.json", "docs/index.json"]
+      "file_scope": [
+        "pyproject.toml",
+        "requirements.txt",
+        ".gitignore",
+        ".env.example",
+        "docker-compose.yml",
+        "Dockerfile",
+        "alembic.ini",
+        "docs/knowledge-graph.json",
+        "docs/index.json"
+      ]
     },
     "wave_2": {
       "title": "Core + storage/notification foundations",
       "agent_owner": "core-infra agent",
-      "file_scope": ["app/core/config.py", "app/core/security.py", "app/core/enums.py", "app/core/exceptions.py", "app/db/base.py", "app/db/session.py", "app/services/storage_service.py", "app/services/notification_service.py"]
+      "file_scope": [
+        "app/core/config.py",
+        "app/core/security.py",
+        "app/core/enums.py",
+        "app/core/exceptions.py",
+        "app/db/base.py",
+        "app/db/session.py",
+        "app/services/storage_service.py",
+        "app/services/notification_service.py"
+      ]
     },
     "wave_3": {
       "title": "Models + schemas",
       "agent_owner": "models-schemas agent",
-      "file_scope": ["app/models/*.py", "app/schemas/*.py"]
+      "file_scope": [
+        "app/models/*.py",
+        "app/schemas/*.py"
+      ]
     },
     "wave_4": {
       "title": "Migration + domain routes/services",
       "agent_owner": "domain-api agent",
-      "file_scope": ["alembic/env.py", "alembic/versions/*", "app/api/router.py", "app/api/routes/*.py", "app/services/auth_service.py", "app/services/complaint_service.py", "app/services/notice_service.py", "app/services/dashboard_service.py", "app/services/overdue_service.py", "app/services/settings_service.py", "app/core/dependencies.py"]
+      "file_scope": [
+        "alembic/env.py",
+        "alembic/versions/*",
+        "app/api/router.py",
+        "app/api/routes/*.py",
+        "app/services/auth_service.py",
+        "app/services/complaint_service.py",
+        "app/services/notice_service.py",
+        "app/services/dashboard_service.py",
+        "app/services/overdue_service.py",
+        "app/services/settings_service.py",
+        "app/core/dependencies.py"
+      ]
     },
     "wave_5": {
       "title": "Wiring + seed",
       "agent_owner": "wiring agent",
-      "file_scope": ["app/main.py", "app/seed.py"]
+      "file_scope": [
+        "app/main.py",
+        "app/seed.py"
+      ]
     },
     "wave_6": {
       "title": "Tests + docs",
       "agent_owner": "tests-docs agent",
-      "file_scope": ["tests/conftest.py", "tests/*.py", "README.md"]
+      "file_scope": [
+        "tests/conftest.py",
+        "tests/*.py",
+        "README.md"
+      ]
     },
     "wave_7": {
       "title": "Verification",
       "agent_owner": "verifier agent",
-      "file_scope": ["full-stack run: alembic upgrade head, seed, smoke-test all routes, health probes"]
+      "file_scope": [
+        "full-stack run: alembic upgrade head, seed, smoke-test all routes, health probes"
+      ]
     }
   },
   "status": {
-    "wave_1": "in_progress",
-    "wave_2": "pending",
-    "wave_3": "pending",
-    "wave_4": "pending",
-    "wave_5": "pending",
-    "wave_6": "pending",
-    "wave_7": "pending"
-  }
+    "wave_1": "done",
+    "wave_2": "done",
+    "wave_3": "done",
+    "wave_4": "done",
+    "wave_5": "done",
+    "wave_6": "done",
+    "wave_7": "done",
+    "e2e_verification": "done: 64/64 checks pass against live server",
+    "pytest": "102 passed"
+  },
+  "fixes_applied": [
+    "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",
+    "ComplaintHistory.actor relationship added (lazy joined) - history endpoint required it",
+    "complaint photo upload now raises FileUploadError(file_too_large) instead of silently truncating at MAX_UPLOAD_SIZE_MB",
+    "route modules corrected to relative paths so api_router prefix /api/v1 is not doubled",
+    "dev JWT default secret extended to >=32 bytes (InsecureKeyLengthWarning resolved)",
+    "alembic.ini path_separator set (removes deprecation warning)"
+  ]
 }
