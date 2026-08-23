@@ -209,6 +209,58 @@ Health probes (at the root, not under `/api/v1`):
 - `GET /health` — service liveness
 - `GET /health/db` — verifies database connectivity (503 if unreachable)
 
+
+## Frontend (Next.js)
+
+The frontend lives in `frontend/` and is a Next.js 16 App Router application (TypeScript, Tailwind v4,
+TanStack Query) that talks directly to the backend REST API. It was built to consume the exact
+`/api/v1` contract described above � no mocks.
+
+### Setup
+
+```
+cd frontend
+pnpm install
+copy .env.example .env.local   # then edit if needed
+```
+
+The only frontend environment variable is `NEXT_PUBLIC_API_BASE_URL`:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://127.0.0.1:8000` | Base URL of the FastAPI backend (without `/api/v1`) |
+
+For local development with the backend running on port 18000:
+
+```
+cd frontend
+$env:NEXT_PUBLIC_API_BASE_URL="http://127.0.0.1:18000"   # PowerShell
+pnpm dev
+```
+
+The dev server runs at http://localhost:3000. In production set
+`NEXT_PUBLIC_API_BASE_URL` to your Cloudflare Tunnel API hostname (e.g.
+`https://api.residency.<domain>`) and make sure that origin is listed in the backend's `CORS_ORIGINS`.
+
+### Commands
+
+```
+pnpm dev      # development server (port 3000)
+pnpm build    # production build (type-checks via tsc)
+pnpm lint     # TypeScript type check (tsc --noEmit)
+```
+
+### Integration notes
+
+- Authentication uses a JWT bearer token kept in `sessionStorage` (never `localStorage`).
+  The backend has no refresh tokens; a 401 clears the session and redirects to `/login`.
+- Complaint photos are fetched through the authenticated endpoint
+  `GET /api/v1/complaints/{id}/photo` (blob ? object URL). There is no public `/uploads` route.
+- Pagination is server-side (`{total, limit, offset, items}`); all filters
+  (category/status/priority/date range/overdue/sort) map 1:1 to backend query parameters.
+- Admin status transitions use an accessible dialog; resolving an OPEN complaint requires a note.
+- Registration returns the user object (not a token); the frontend then logs in to obtain the JWT.
+
 ## API Overview
 
 All endpoints live under `/api/v1` except the health probes.
@@ -433,3 +485,4 @@ curl http://localhost:8000/api/v1/complaints/<complaint_id>/history ^
 curl http://localhost:8000/api/v1/dashboard/summary ^
   -H "Authorization: Bearer %ADMIN_TOKEN%"
 ```
+

@@ -385,7 +385,8 @@
     "pytest": "102 passed",
     "final_qa_audit": "done: 137 pytest passed, 68/68 e2e, docker verified",
     "ci_preparation": "done: GitHub Actions workflow added; conftest parameterized via TEST_DATABASE_URL; 137 passed locally on both default and override paths",
-    "monorepo_restructure": "done: app/, alembic/, tests/ moved to backend/ via git mv; alembic.ini script_location -> backend/alembic; env.py prepends backend to sys.path; pyproject pythonpath+testpaths updated; Dockerfile mirrors layout under /app/backend with PYTHONPATH; verified 137 pytest + alembic head + isolated docker build/migrate/seed/photo-persistence"
+    "monorepo_restructure": "done: app/, alembic/, tests/ moved to backend/ via git mv; alembic.ini script_location -> backend/alembic; env.py prepends backend to sys.path; pyproject pythonpath+testpaths updated; Dockerfile mirrors layout under /app/backend with PYTHONPATH; verified 137 pytest + alembic head + isolated docker build/migrate/seed/photo-persistence",
+    "frontend_integration": "done: full Next.js frontend built against real /api/v1 contract; tsc+build green; 47/47 live E2E; backend pytest 137; CORS verified; auth sessionStorage-only; photos via authenticated blob endpoint"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",
@@ -403,7 +404,14 @@
     "RESEND: production SMTP-relay configuration documented in .env.example, README and notification-flow.md",
     "CI: tests/conftest.py parameterized via TEST_DATABASE_URL env (default unchanged); admin URL derived with render_as_string(hide_password=False) - str(URL) masks password as literal *** which caused auth failures",
     "CI: DATABASE_URL defaults pinned to 127.0.0.1 instead of localhost to avoid IPv6 loopback port hijacking by WSL relay on dev machines",
-    "CI: bounded retry around test-database bootstrap for environmental flakiness"
+    "CI: bounded retry around test-database bootstrap for environmental flakiness",
+    "FRONTEND: register flow fixed (backend returns UserOut; frontend then logs in for token)",
+    "FRONTEND: history consumed as {complaint_id, items[]} envelope",
+    "FRONTEND: removed unsupported ?search= param; real filters (category/status/priority/date/overdue tri-state/sort) + server-side pagination",
+    "FRONTEND: Complaint type matches backend (photo_url, nested resident/category briefs); Notice uses is_important + created_by; dashboard by_category uses category_id/category_name/count",
+    "FRONTEND: alert() replaced by accessible status-change Dialog (note required when OPEN->RESOLVED; 409 surfaced in-dialog)",
+    "FRONTEND: photos fetched via authenticated endpoint -> blob -> objectURL -> revoke; no /uploads usage",
+    "FRONTEND: removed as any, mock/placeholder UI, dead real-app.tsx + complaint-workflows.tsx"
   ],
   "security_review": {
     "date": "2026-08-23",
