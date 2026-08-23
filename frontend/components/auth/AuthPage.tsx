@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2 } from 'lucide-react'
 import { api, errorMessage, isApiError } from '@/lib/api/client'
 import { useAuth } from '@/components/auth-provider'
 
@@ -50,31 +49,26 @@ export function AuthPage({ register = false }: { register?: boolean }) {
 
   return (
     <main className="auth-page">
-      <div className="auth-card">
-        <div className="brand auth-brand">
-          <div className="brand-mark">
-            <Building2 size={17} />
-          </div>
-          <span>residency</span>
-        </div>
-        <p className="eyebrow">RIVERSIDE RESIDENCY</p>
-        <h1>{register ? 'Create resident account' : 'Welcome back'}</h1>
-        <p className="subheading">
-          {register ? 'Join your community management portal.' : 'Sign in to manage your residency requests.'}
+      <div className="auth-form-side">
+        <div className="auth-brand">RESIDENCY_</div>
+        <p className="auth-sub">
+          {register
+            ? 'Register a resident identity to access the community portal.'
+            : 'System authentication required. Proceed to access control panel.'}
         </p>
-        <form onSubmit={submit}>
+        <form className="auth-card" onSubmit={submit}>
           {register && (
             <label>
-              Full name
-              <input required minLength={2} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+              <span>Operator [Full Name]</span>
+              <input required minLength={2} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Jane Doe" />
             </label>
           )}
           <label>
-            Email
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            <span>Identifier [Email]</span>
+            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="operator@residency.sys" />
           </label>
           <label>
-            Password
+            <span>Access Key [Password]</span>
             <input
               required
               minLength={8}
@@ -83,22 +77,22 @@ export function AuthPage({ register = false }: { register?: boolean }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={register ? 'new-password' : 'current-password'}
+              placeholder="••••••••"
             />
           </label>
           {register && (
-            <p className="muted">
-              Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a digit.
+            <p className="muted" style={{ margin: 0 }}>
+              Minimum 8 characters with an uppercase letter, a lowercase letter, and a digit.
             </p>
           )}
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           <button className="primary full" type="submit" disabled={busy || locked}>
-            {locked
-              ? `Try again in ${lockedSeconds}s`
-              : busy
-                ? 'Connecting…'
-                : register
-                  ? 'Create account'
-                  : 'Sign in'}
+            {locked ? `Try again in ${lockedSeconds}s` : busy ? 'Connecting…' : register ? 'Create Account' : 'Authenticate'}
+            {!locked && !busy && <span style={{ marginLeft: 4 }}>→</span>}
           </button>
         </form>
         <p className="auth-switch">
@@ -107,6 +101,13 @@ export function AuthPage({ register = false }: { register?: boolean }) {
             {register ? 'Sign in' : 'Create account'}
           </button>
         </p>
+        <div className="auth-secure">
+          Secure Connection <span className="dot">● Active</span>
+        </div>
+      </div>
+      <div className="auth-art">
+        <div className="art-tag">SECTOR 7G / HIGH DENSITY</div>
+        <div className="art-line">Residency control array initialized. Manage maintenance, notices, and community operations from one console.</div>
       </div>
     </main>
   )

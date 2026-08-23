@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { CheckCircle2, Wrench } from 'lucide-react'
 import type { Status } from '@/lib/types'
+import { Icon } from '@/components/ui/icon'
 import { useComplaintStatusMutation } from './use-complaint-mutations'
 import { ResolveDialog } from './resolve-dialog'
 
@@ -34,13 +34,13 @@ export function StatusActions({
             onClick={() => startMutation.mutate({ status: 'IN_PROGRESS' })}
             disabled={startMutation.isPending}
           >
-            <Wrench size={14} />
+            <Icon name="build" size={16} />
             {startMutation.isPending ? 'Starting…' : 'Start work'}
           </button>
         )}
         {canResolve && (
           <button className="outline" onClick={() => setResolveOpen(true)} disabled={startMutation.isPending}>
-            <CheckCircle2 size={14} />
+            <Icon name="check_circle" size={16} />
             Resolve
           </button>
         )}

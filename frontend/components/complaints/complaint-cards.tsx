@@ -1,8 +1,8 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { Folder } from 'lucide-react'
 import type { Complaint } from '@/lib/types'
 import { PriorityBadge, StatusBadge, formatDate } from '@/components/ui/badge'
+import { Icon } from '@/components/ui/icon'
 
 export function ComplaintCards({ items }: { items: Complaint[] }) {
   const router = useRouter()
@@ -12,15 +12,18 @@ export function ComplaintCards({ items }: { items: Complaint[] }) {
         <button key={c.id} className="complaint-card" onClick={() => router.push(`/complaints/${c.id}`)}>
           <span className="complaint-card-top">
             <StatusBadge value={c.status} />
-            <PriorityBadge value={c.priority} />
+            <span className="priority-tag">
+              P{['', 'HIGH', 'MED', 'LOW'][['HIGH', 'MEDIUM', 'LOW'].indexOf(c.priority) + 1]} · {c.priority}
+            </span>
           </span>
-          <span className="complaint-card-title">{c.description}</span>
+          <span>
+            <span className="complaint-card-title">{c.description}</span>
+          </span>
           <span className="complaint-card-meta">
             <span>
-              <Folder size={12} /> {c.category.name}
+              <Icon name="folder" size={16} /> {c.category.name}
             </span>
             <span>{formatDate(c.created_at)}</span>
-            <span className="mono">{c.id.slice(0, 8)}</span>
           </span>
         </button>
       ))}

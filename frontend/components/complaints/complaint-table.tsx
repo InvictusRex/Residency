@@ -1,8 +1,8 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { Folder, Timer } from 'lucide-react'
 import type { Complaint } from '@/lib/types'
 import { PriorityBadge, StatusBadge, formatDate } from '@/components/ui/badge'
+import { Icon } from '@/components/ui/icon'
 import { TableStatusActions } from './table-status-actions'
 
 function isOverdue(complaint: Complaint, thresholdDays: number | undefined, now: number): boolean {
@@ -50,14 +50,14 @@ export function ComplaintTable({
                 style={{ cursor: 'pointer' }}
               >
                 <td>
-                  <span className="complaint-id mono">{c.id.slice(0, 8)}</span>
+                  <span className="complaint-id">{c.id.slice(0, 8)}</span>
                   <span className="complaint-title">{c.description}</span>
                   <span className="chip">
-                    <Folder size={12} />
+                    <Icon name="folder" size={15} />
                     {c.category.name}
                     {overdue && (
                       <span className="overdue-tag">
-                        <Timer size={11} /> Overdue
+                        <Icon name="timer" size={14} /> Overdue
                       </span>
                     )}
                   </span>

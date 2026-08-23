@@ -1,7 +1,7 @@
 import struct
 import uuid
 import zlib
-from datetime import date, timedelta
+from datetime import datetime, timezone, timedelta
 
 from tests.conftest import API
 
@@ -210,7 +210,7 @@ class TestListComplaints:
 
     def test_filter_by_date_range(self, client, admin_headers, resident_headers, complaint_factory):
         complaint = complaint_factory(resident_headers)
-        today = date.today()
+        today = datetime.now(timezone.utc).date()
         tomorrow = today + timedelta(days=1)
 
         from_today = client.get(

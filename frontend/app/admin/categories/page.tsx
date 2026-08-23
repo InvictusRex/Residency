@@ -1,15 +1,23 @@
 'use client'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus } from 'lucide-react'
 import { api, errorMessage } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
 import type { Category } from '@/lib/types'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { Dialog } from '@/components/ui/dialog'
+import { Icon } from '@/components/ui/icon'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { useToast } from '@/components/ui/toast'
+
+const CATEGORY_ICONS: Record<string, string> = {
+  Plumbing: 'plumbing',
+  Electrical: 'electrical_services',
+  Security: 'security',
+  Cleaning: 'cleaning_services',
+  Other: 'category',
+}
 
 export default function AdminCategoriesPage() {
   const { token } = useAuth()
@@ -30,71 +38,81 @@ export default function AdminCategoriesPage() {
   })
 
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.categories })
+  const activeCount = q.data?.filter((c) => c.is_active).length ?? 0
 
   return (
     <Shell title="Categories">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">ADMINISTRATION</p>
-          <h1>Categories</h1>
-          <p className="subheading">
-            Manage complaint classifications. Inactive categories cannot be selected by residents.
-          </p>
+          <p className="eyebrow">Admin Control Center</p>
+          <h1>Manage Categories</h1>
+          <p className="subheading">Organize issue types for structured reporting.</p>
         </div>
         <button className="primary" onClick={() => setCreateOpen(true)}>
-          <Plus size={16} /> New category
+          <Icon name="add" size={18} />
+          Add Category
         </button>
       </div>
-      <section className="panel">
+
+      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+        <StatCard label="Total Categories" value={q.data?.length ?? 0} icon="list_alt" />
+        <StatCard label="Active" value={activeCount} icon="check_circle" accent />
+      </div>
+
+      <div className="panel">
         {q.isPending ? (
           <LoadingState />
         ) : q.error ? (
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
         ) : q.data?.length ? (
-          <div>
-            {[
-              { label: 'Active categories', active: true },
-              { label: 'Inactive categories', active: false },
-            ].map((group) => {
-              const groupItems = q.data!.filter((c) => c.is_active === group.active)
-              if (!groupItems.length) return null
-              return (
-                <div key={group.label}>
-                  <p className="section-label" style={{ margin: '18px 22px 6px' }}>
-                    {group.label}
-                  </p>
-                  {groupItems.map((c) => (
-                    <div className="category-card" key={c.id}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <strong style={{ color: '#e8e8e8', fontSize: 12, fontWeight: 600 }}>{c.name}</strong>
-                          <span className={`cat-badge ${c.is_active ? 'active' : 'inactive'}`}>
-                            {c.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                        <p className="cat-desc">{c.description || 'No description'}</p>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ width: '28%' }}>Category Name</th>
+                  <th>Description</th>
+                  <th style={{ textAlign: 'center', width: '120px' }}>Status</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {q.data.map((c) => (
+                  <tr key={c.id} className="group" style={c.is_active ? undefined : { opacity: 0.55 }}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span className="cat-icon">
+                          <Icon name={CATEGORY_ICONS[c.name] ?? 'category'} size={18} />
+                        </span>
+                        <span className="cat-name">{c.name}</span>
+                        {!c.is_active && <span className="cat-badge inactive">Inactive</span>}
                       </div>
-                      <div className="cat-actions">
-                        <button onClick={() => setEditing(c)}>Edit</button>
-                        {c.is_active ? (
-                          <button onClick={() => toggleActive.mutate(c)}>Deactivate</button>
-                        ) : (
-                          <button onClick={() => toggleActive.mutate(c)}>Activate</button>
-                        )}
-                        <button className="danger" onClick={() => setDeleting(c)}>
-                          Delete
+                    </td>
+                    <td className="cat-desc" style={{ margin: 0 }}>{c.description || 'No description'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <label className="switch">
+                        <input type="checkbox" checked={c.is_active} onChange={() => toggleActive.mutate(c)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="row-actions-reveal">
+                        <button className="icon-btn" title="Edit" onClick={() => setEditing(c)} aria-label="Edit category">
+                          <Icon name="edit" size={18} />
+                        </button>
+                        <button className="icon-btn danger" title="Delete" onClick={() => setDeleting(c)} aria-label="Delete category">
+                          <Icon name="delete" size={18} />
                         </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
           <EmptyState title="No categories yet" message="Create the first complaint category." />
         )}
-      </section>
+      </div>
 
       <CategoryFormDialog
         key={editing?.id ?? (createOpen ? 'new' : 'closed')}
@@ -114,6 +132,18 @@ export default function AdminCategoriesPage() {
         onDeleted={refresh}
       />
     </Shell>
+  )
+}
+
+function StatCard({ label, value, icon, accent }: { label: string; value: number; icon: string; accent?: boolean }) {
+  return (
+    <div className={`stat-card${accent ? ' lime' : ''}`}>
+      <span>{label}</span>
+      <strong style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {value}
+        <Icon name={icon} size={22} />
+      </strong>
+    </div>
   )
 }
 
@@ -168,11 +198,11 @@ function CategoryFormDialog({
   return (
     <Dialog open={open} onClose={onClose} title={category ? 'Edit category' : 'Create category'}>
       <label>
-        Name
+        <span>Name</span>
         <input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus />
       </label>
       <label>
-        Description
+        <span>Description</span>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} rows={4} />
       </label>
       <label className="check-row">
@@ -231,7 +261,7 @@ function ConfirmDeleteCategory({
         </button>
         <button
           className="primary"
-          style={{ background: '#e53935', color: '#fff' }}
+          style={{ background: 'var(--red)', color: '#fff', borderColor: 'var(--red)' }}
           onClick={() => m.mutate()}
           disabled={m.isPending}
         >

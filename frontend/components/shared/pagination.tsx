@@ -1,5 +1,5 @@
 'use client'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Icon } from '@/components/ui/icon'
 
 export function Pagination({
   page,
@@ -22,13 +22,13 @@ export function Pagination({
       </span>
       <div className="pagination-controls">
         <button className="pager-btn" onClick={() => onChange(page - 1)} disabled={page <= 1} aria-label="Previous page">
-          <ChevronLeft size={15} />
+          <Icon name="chevron_left" size={18} />
         </button>
         <span className="pagination-page">
           Page {page} of {pages}
         </span>
         <button className="pager-btn" onClick={() => onChange(page + 1)} disabled={page >= pages} aria-label="Next page">
-          <ChevronRight size={15} />
+          <Icon name="chevron_right" size={18} />
         </button>
       </div>
     </div>

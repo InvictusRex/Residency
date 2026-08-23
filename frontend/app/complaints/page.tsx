@@ -56,9 +56,9 @@ export default function AdminComplaintsPage() {
     <Shell title="Complaints">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">ADMINISTRATION</p>
-          <h1>Complaint management</h1>
-          <p className="subheading">Triage requests across your residency. Overdue complaints sort to the top.</p>
+          <p className="eyebrow">Admin Control Center</p>
+          <h1>Complaint Management</h1>
+          <p className="subheading">Monitor and resolve resident issues with high-visibility tracking.</p>
         </div>
       </div>
       <section className="panel">

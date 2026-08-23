@@ -1,13 +1,14 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
 import type { Priority } from '@/lib/types'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { PhotoImage } from '@/components/shared/photo-image'
-import { PriorityBadge, StatusBadge, formatDate, formatDateTime } from '@/components/ui/badge'
+import { PriorityBadge, StatusBadge, formatDateTime } from '@/components/ui/badge'
+import { Icon } from '@/components/ui/icon'
 import { LoadingState } from '@/components/shared/states'
 import { StatusActions } from '@/components/complaints/status-actions'
 import { useComplaintPriorityMutation } from '@/components/complaints/use-complaint-mutations'
@@ -16,6 +17,7 @@ export default function ComplaintDetailPage() {
   const { token, user } = useAuth()
   const params = useParams<{ id: string }>()
   const id = params.id
+  const router = useRouter()
 
   const q = useQuery({
     queryKey: queryKeys.complaint(id),
@@ -51,108 +53,138 @@ export default function ComplaintDetailPage() {
 
   return (
     <Shell title="Complaint detail">
+      <button className="back-link" onClick={() => router.push(isAdmin ? '/complaints' : '/my-complaints')}>
+        <Icon name="arrow_back" size={18} />
+        Back to {isAdmin ? 'Complaints' : 'My Complaints'}
+      </button>
+
       <div className="page-heading">
         <div>
-          <p className="eyebrow">COMPLAINT {c.id.slice(0, 8)}</p>
-          <h1>{c.category.name}</h1>
-          <p className="subheading">
-            Filed by {c.resident.name} · {formatDate(c.created_at)}
+          <p className="eyebrow">Ticket #{c.id.slice(0, 8).toUpperCase()}</p>
+          <div className="detail-page-title">
+            {c.category.name}
+            <StatusBadge value={c.status} />
+            <PriorityBadge value={c.priority} />
+          </div>
+          <p className="ticket-line">
+            Filed by {c.resident.name} · Created {formatDateTime(c.created_at)}
           </p>
         </div>
         {isAdmin && <StatusActions complaintId={c.id} current={c.status} token={token!} />}
       </div>
 
       <div className="detail-grid">
-        <section className="panel form-panel">
-          <div className="detail-meta-row">
-            <StatusBadge value={c.status} />
-            <PriorityBadge value={c.priority} />
-          </div>
-          <p style={{ color: '#cfcfcf', lineHeight: 1.6, margin: '14px 0 0' }}>{c.description}</p>
+        <div style={{ display: 'grid', gap: 16 }}>
+          <section className="panel" style={{ padding: 20 }}>
+            <div className="section-label" style={{ marginBottom: 10 }}>
+              Complaint Description
+            </div>
+            <p style={{ color: 'var(--text-slate)', fontSize: 14, lineHeight: 1.7, margin: 0 }}>{c.description}</p>
+          </section>
 
-          <div className="info-grid">
-            <div className="info-item">
-              <span className="k">Category</span>
-              <span className="v">{c.category.name}</span>
-            </div>
-            <div className="info-item">
-              <span className="k">Resident</span>
-              <span className="v">{c.resident.name}</span>
-            </div>
-            <div className="info-item">
-              <span className="k">Resident email</span>
-              <span className="v">{c.resident.email}</span>
-            </div>
-            <div className="info-item">
-              <span className="k">Created</span>
-              <span className="v">{formatDateTime(c.created_at)}</span>
-            </div>
-            <div className="info-item">
-              <span className="k">Last updated</span>
-              <span className="v">{formatDateTime(c.updated_at)}</span>
-            </div>
-            <div className="info-item">
-              <span className="k">Resolved</span>
-              <span className="v">{c.resolved_at ? formatDateTime(c.resolved_at) : '—'}</span>
-            </div>
-          </div>
-
-          <PhotoImage
-            complaintId={c.id}
-            hasPhoto={!!c.photo_url}
-            token={token!}
-            className="complaint-photo"
-            alt={`Photo attached to complaint ${c.id}`}
-          />
+          {c.photo_url && (
+            <section className="panel" style={{ padding: 20 }}>
+              <div className="section-label" style={{ marginBottom: 10 }}>Attachment</div>
+              <PhotoImage
+                complaintId={c.id}
+                hasPhoto={!!c.photo_url}
+                token={token!}
+                className="complaint-photo"
+                alt={`Photo attached to complaint ${c.id}`}
+              />
+            </section>
+          )}
 
           {isAdmin && (
-            <div className="admin-actions">
-              <label>
-                Priority
-                <select
-                  value={c.priority}
-                  onChange={(e) => priorityMutation.mutate(e.target.value as Priority)}
-                  disabled={priorityMutation.isPending}
-                >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                </select>
-              </label>
-            </div>
+            <section className="panel" style={{ padding: 20 }}>
+              <div className="section-label" style={{ marginBottom: 10 }}>Priority Control</div>
+              <div className="admin-actions" style={{ marginTop: 0, paddingTop: 0, borderTop: 'none' }}>
+                <label>
+                  Set priority
+                  <select
+                    value={c.priority}
+                    onChange={(e) => priorityMutation.mutate(e.target.value as Priority)}
+                    disabled={priorityMutation.isPending}
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                  </select>
+                </label>
+                {priorityMutation.error && (
+                  <p className="form-error">{priorityMutation.error instanceof Error ? priorityMutation.error.message : 'Unable to update priority.'}</p>
+                )}
+              </div>
+            </section>
           )}
-        </section>
+        </div>
 
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Status history</h2>
-              <p>Immutable audit trail</p>
+        <div style={{ display: 'grid', gap: 16, alignSelf: 'start' }}>
+          <section className="panel" style={{ padding: 20 }}>
+            <div className="section-label" style={{ marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+              Reporter Details
             </div>
-          </div>
-          {h.isPending ? (
-            <LoadingState label="Loading history…" />
-          ) : h.error ? (
-            <p className="form-error">Unable to load history.</p>
-          ) : h.data?.items.length ? (
-            <ul className="timeline">
-              {[...h.data.items].reverse().map((item, i) => (
-                <li key={item.id} className={`timeline-item${i === 0 ? ' latest' : ''}`}>
-                  <span className="timeline-dot" />
-                  <div>
-                    <StatusBadge value={item.status} />
-                    <p>{item.note || 'Status updated'}</p>
-                    <small>
-                      {item.actor.name} · {formatDateTime(item.created_at)}
-                    </small>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="loading-state">No history recorded.</p>
-          )}
-        </section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                className="side-avatar"
+                style={{ width: 46, height: 46, background: '#4d4632', color: 'var(--yellow)', fontSize: 13 }}
+              >
+                {c.resident.name.slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-space)', fontWeight: 700, color: 'var(--text-hi)', textTransform: 'uppercase', letterSpacing: '-.3px' }}>
+                  {c.resident.name}
+                </div>
+                <div className="meta mono" style={{ marginTop: 2 }}>{c.resident.email}</div>
+              </div>
+            </div>
+            <div className="info-grid" style={{ gridTemplateColumns: '1fr', marginTop: 14, paddingTop: 14, gap: 12 }}>
+              <div className="info-item">
+                <span className="k">Created</span>
+                <span className="v">{formatDateTime(c.created_at)}</span>
+              </div>
+              <div className="info-item">
+                <span className="k">Last updated</span>
+                <span className="v">{formatDateTime(c.updated_at)}</span>
+              </div>
+              <div className="info-item">
+                <span className="k">Resolved</span>
+                <span className="v">{c.resolved_at ? formatDateTime(c.resolved_at) : '—'}</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <h2>Status History</h2>
+                <p>Immutable audit trail</p>
+              </div>
+            </div>
+            {h.isPending ? (
+              <LoadingState label="Loading history…" />
+            ) : h.error ? (
+              <p className="form-error" style={{ padding: 16 }}>Unable to load history.</p>
+            ) : h.data?.items.length ? (
+              <ul className="timeline">
+                {[...h.data.items].reverse().map((item, i) => (
+                  <li key={item.id} className={`timeline-item${i === 0 ? ' latest' : ''}`}>
+                    <span className="timeline-dot" />
+                    <div>
+                      <StatusBadge value={item.status} />
+                      <p>{item.note || 'Status updated'}</p>
+                      <small>
+                        {item.actor.name} · {formatDateTime(item.created_at)}
+                      </small>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="loading-state">No history recorded.</p>
+            )}
+          </section>
+        </div>
       </div>
     </Shell>
   )

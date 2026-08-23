@@ -1,36 +1,74 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import {
-  Bell,
-  Building2,
-  ClipboardList,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Settings,
-  Tags,
-  UserCircle,
-  X,
-} from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
+import { useTheme } from '@/components/theme-provider'
+import { Icon } from '@/components/ui/icon'
 
-type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; admin?: boolean; resident?: boolean; group: string }
+type NavItem = { href: string; label: string; icon: string; admin?: boolean; resident?: boolean }
 
-const nav: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true, group: 'Overview' },
-  { href: '/complaints', label: 'Complaints', icon: ClipboardList, admin: true, group: 'Overview' },
-  { href: '/my-complaints', label: 'My complaints', icon: ClipboardList, resident: true, group: 'Overview' },
-  { href: '/notices', label: 'Notices', icon: Bell, group: 'Community' },
-  { href: '/admin/categories', label: 'Categories', icon: Tags, admin: true, group: 'Administration' },
-  { href: '/admin/notices', label: 'Notice management', icon: Bell, admin: true, group: 'Administration' },
-  { href: '/admin/settings', label: 'Settings', icon: Settings, admin: true, group: 'Administration' },
-  { href: '/profile', label: 'Profile', icon: UserCircle, group: 'Account' },
+const adminNav: NavItem[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: 'dashboard', admin: true },
+  { href: '/complaints', label: 'Complaints', icon: 'report_problem', admin: true },
+  { href: '/notices', label: 'Notices', icon: 'campaign' },
+  { href: '/admin/categories', label: 'Categories', icon: 'category', admin: true },
+  { href: '/admin/notices', label: 'Notice Mgmt', icon: 'campaign', admin: true },
+  { href: '/admin/settings', label: 'Settings', icon: 'settings', admin: true },
+  { href: '/profile', label: 'Profile', icon: 'account_circle' },
 ]
 
+const residentNav: NavItem[] = [
+  { href: '/my-complaints', label: 'My Complaints', icon: 'report_problem', resident: true },
+  { href: '/my-complaints/new', label: 'Create Complaint', icon: 'add_circle', resident: true },
+  { href: '/notices', label: 'Notices', icon: 'campaign' },
+]
+
+function ThemeSwitch() {
+  const { theme, toggle } = useTheme()
+  return (
+    <div className="theme-switch" role="group" aria-label="Theme">
+      <button
+        className={`theme-segment${theme === 'dark' ? ' active' : ''}`}
+        onClick={() => theme !== 'dark' && toggle()}
+        aria-pressed={theme === 'dark'}
+      >
+        <Icon name="dark_mode" size={16} />
+        Dark
+      </button>
+      <button
+        className={`theme-segment${theme === 'light' ? ' active' : ''}`}
+        onClick={() => theme !== 'light' && toggle()}
+        aria-pressed={theme === 'light'}
+      >
+        <Icon name="light_mode" size={16} />
+        Light
+      </button>
+    </div>
+  )
+}
+
+function SignOutButton() {
+  const { signOut } = useAuth()
+  const router = useRouter()
+  return (
+    <button
+      className="outline"
+      style={{ width: '100%' }}
+      onClick={() => {
+        signOut()
+        router.replace('/login')
+      }}
+    >
+      <Icon name="logout" size={16} />
+      Logout
+    </button>
+  )
+}
+
 export function Shell({ children, title }: { children: React.ReactNode; title: string }) {
-  const { user, signOut, loading } = useAuth()
+  const { user, loading } = useAuth()
   const [mobile, setMobile] = useState(false)
+  const [residentMenu, setResidentMenu] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -43,84 +81,132 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
   if (loading) return <div className="loading-screen">Loading session…</div>
   if (!user) return <div className="loading-screen">Checking access…</div>
 
-  const allowed = nav.filter((n) => {
-    if (n.admin && user.role !== 'ADMIN') return false
-    if (n.resident && user.role !== 'RESIDENT') return false
+  const isAdmin = user.role === 'ADMIN'
+  const nav = (isAdmin ? adminNav : residentNav).filter((n) => {
+    if (n.admin && !isAdmin) return false
+    if (n.resident && isAdmin) return false
     return true
   })
 
-  const groups = allowed.reduce<{ label: string; items: NavItem[] }[]>((acc, item) => {
-    const existing = acc.find((g) => g.label === item.group)
-    if (existing) existing.items.push(item)
-    else acc.push({ label: item.group, items: [item] })
-    return acc
-  }, [])
+  if (!isAdmin) {
+    return (
+      <div className="residency-app" style={{ display: 'block' }}>
+        <nav className="topnav">
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span className="topnav-brand">Residency</span>
+            <div className="topnav-links">
+              {nav.map(({ href, label }) => (
+                <button
+                  key={href}
+                  className={pathname === href || (href !== '/my-complaints' && pathname.startsWith(href)) ? 'topnav-link active' : 'topnav-link'}
+                  onClick={() => router.push(href)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="topnav-right">
+            <ThemeSwitch />
+            <button
+              className="menu-btn"
+              onClick={() => setResidentMenu((v) => !v)}
+              aria-label="Open menu"
+              aria-expanded={residentMenu}
+            >
+              <Icon name="menu" size={22} />
+            </button>
+            <button
+              className="topnav-avatar"
+              onClick={() => router.push('/profile')}
+              aria-label="Profile"
+              title={user.name}
+            >
+              {user.name.slice(0, 2).toUpperCase()}
+            </button>
+          </div>
+        </nav>
+        {residentMenu && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 64,
+              left: 0,
+              right: 0,
+              zIndex: 39,
+              background: 'var(--surface-deep)',
+              borderBottom: '1px solid var(--border)',
+              padding: 10,
+              display: 'grid',
+              gap: 4,
+            }}
+          >
+            {nav.map(({ href, label }) => (
+              <button
+                key={href}
+                className="nav-item"
+                onClick={() => {
+                  setResidentMenu(false)
+                  router.push(href)
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="content" style={{ paddingTop: 92 }}>
+          {children}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="residency-app">
       <aside className={mobile ? 'sidebar open' : 'sidebar'}>
-        <div className="brand">
-          <div className="brand-mark">
-            <Building2 size={17} />
+        <div className="sidebar-header">
+          <div className="side-avatar">{user.name.slice(0, 2).toUpperCase()}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="side-name">{user.name}</div>
+            <div className="side-role">{user.role === 'ADMIN' ? 'Community Manager' : user.role}</div>
           </div>
-          <span>residency</span>
           <button className="close-nav" onClick={() => setMobile(false)} aria-label="Close menu">
-            <X size={19} />
+            <Icon name="close" size={20} />
           </button>
         </div>
-        <div className="workspace">
-          <div className="workspace-icon">R</div>
-          <div>
-            <strong>Riverside Residency</strong>
-            <small>Management portal</small>
-          </div>
-        </div>
-        <nav>
-          {groups.map((group) => (
-            <div key={group.label}>
-              <p className="nav-group-label" style={{ margin: '18px 10px 6px' }}>
-                {group.label}
-              </p>
-              {group.items.map(({ href, label, icon: Icon }) => (
-                <button
-                  key={href}
-                  className={pathname === href ? 'nav-item active' : 'nav-item'}
-                  onClick={() => {
-                    setMobile(false)
-                    router.push(href)
-                  }}
-                >
-                  <Icon size={17} />
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
+
+        <button className="primary side-cta" onClick={() => router.push('/admin/notices')}>
+          <Icon name="add" size={18} />
+          New Notice
+        </button>
+
+        <nav className="nav">
+          {nav.map(({ href, label, icon }) => (
+            <button
+              key={href}
+              className={pathname === href ? 'nav-item active' : 'nav-item'}
+              onClick={() => {
+                setMobile(false)
+                router.push(href)
+              }}
+            >
+              <Icon name={icon} size={20} />
+              {label}
+            </button>
           ))}
         </nav>
-        <div className="sidebar-bottom">
-          <div className="avatar">{user.name.slice(0, 2).toUpperCase()}</div>
-          <div>
-            <strong>{user.name}</strong>
-            <small>{user.role}</small>
-          </div>
-          <button
-            onClick={() => {
-              signOut()
-              router.replace('/login')
-            }}
-            aria-label="Sign out"
-          >
-            <LogOut size={16} />
-          </button>
+
+        <div className="side-footer">
+          <ThemeSwitch />
+          <SignOutButton />
         </div>
       </aside>
-      {mobile && (
-        <button className="scrim" onClick={() => setMobile(false)} aria-label="Close navigation" />
-      )}
+      {mobile && <button className="scrim" onClick={() => setMobile(false)} aria-label="Close navigation" />}
       <main className="main">
         <header>
           <button className="menu-btn" onClick={() => setMobile(true)} aria-label="Open menu">
-            <Menu size={21} />
+            <Icon name="menu" size={22} />
           </button>
           <div className="breadcrumbs">
             <span>Workspace</span>

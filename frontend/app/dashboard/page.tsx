@@ -1,30 +1,35 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle2, ClipboardList, Clock3 } from 'lucide-react'
-import { api } from '@/lib/api/client'
+import { api, buildComplaintQuery } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
 import type { DashboardSummary } from '@/lib/types'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { ErrorState, LoadingState } from '@/components/shared/states'
+import { Icon } from '@/components/ui/icon'
+import { formatDate } from '@/components/ui/badge'
 
 const STATUS_META = [
-  { key: 'OPEN', label: 'Open', color: '#e0b000' },
-  { key: 'IN_PROGRESS', label: 'In progress', color: '#d4d800' },
-  { key: 'RESOLVED', label: 'Resolved', color: '#7e9a00' },
+  { key: 'OPEN', label: 'Open', color: '#84cc16' },
+  { key: 'IN_PROGRESS', label: 'In progress', color: '#facc15' },
+  { key: 'RESOLVED', label: 'Resolved', color: '#475569' },
 ] as const
 
 export default function DashboardPage() {
   const { token } = useAuth()
   const q = useQuery({ queryKey: queryKeys.dashboard, queryFn: () => api.dashboard(token!) })
   const settings = useQuery({ queryKey: queryKeys.settings, queryFn: () => api.settings(token!) })
+  const feedQ = useQuery({
+    queryKey: queryKeys.complaints('feed'),
+    queryFn: () => api.complaints(token!, buildComplaintQuery({ limit: 6, sort: 'newest' })),
+  })
 
   return (
     <Shell title="Dashboard">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">COMMUNITY OVERVIEW</p>
-          <h1>Dashboard</h1>
+          <p className="eyebrow">Live Data Feed // Residency Status</p>
+          <h1>Operations Hub</h1>
           <p className="subheading">Operational metrics from the Residency backend.</p>
         </div>
       </div>
@@ -35,18 +40,18 @@ export default function DashboardPage() {
       ) : (
         <>
           <div className="metric-grid">
-            <Metric label="Total complaints" value={q.data.total_complaints} icon={<ClipboardList size={17} />} />
-            <Metric label="Open" value={q.data.by_status.OPEN} icon={<Clock3 size={17} />} />
-            <Metric label="In progress" value={q.data.by_status.IN_PROGRESS} icon={<ClipboardList size={17} />} />
-            <Metric label="Resolved" value={q.data.by_status.RESOLVED} icon={<CheckCircle2 size={17} />} />
-            <Metric label="Overdue" value={q.data.overdue_count} accent icon={<AlertTriangle size={17} />} />
+            <Metric label="Total Complaints" value={q.data.total_complaints} icon="receipt_long" />
+            <Metric label="Open" value={q.data.by_status.OPEN} accent icon="schedule" />
+            <Metric label="In Progress" value={q.data.by_status.IN_PROGRESS} icon="construction" />
+            <Metric label="Resolved" value={q.data.by_status.RESOLVED} icon="check_circle" />
+            <Metric label="Overdue" value={q.data.overdue_count} warn icon="warning" />
           </div>
 
           <div className="dashboard-grid">
             <section className="panel">
               <div className="panel-header">
                 <div>
-                  <h2>Status distribution</h2>
+                  <h2>Status Distribution</h2>
                   <p>Breakdown of all complaints</p>
                 </div>
               </div>
@@ -56,13 +61,43 @@ export default function DashboardPage() {
             <section className="panel">
               <div className="panel-header">
                 <div>
-                  <h2>By category</h2>
-                  <p>Distribution returned by the API</p>
+                  <h2>System Feed</h2>
+                  <p>Latest complaints</p>
                 </div>
+                <span className="chip-btn active" style={{ border: 'none', padding: 0 }}>
+                  Live
+                </span>
               </div>
-              <CategoryBreakdown data={q.data} />
+              {feedQ.isPending ? (
+                <LoadingState label="Loading feed…" />
+              ) : feedQ.data?.items.length ? (
+                <div className="feed">
+                  {feedQ.data.items.map((c) => (
+                    <div key={c.id} className={`feed-item${c.status === 'RESOLVED' ? ' resolved' : ''}`}>
+                      <span className="feed-dot" />
+                      <div className="feed-time">{formatDate(c.created_at)}</div>
+                      <div className="feed-title">{c.description}</div>
+                      <div className="feed-cat">
+                        {c.category.name} · {c.status.replace('_', ' ')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="loading-state">No complaints yet.</p>
+              )}
             </section>
           </div>
+
+          <section className="panel" style={{ marginTop: 16 }}>
+            <div className="panel-header">
+              <div>
+                <h2>By Category</h2>
+                <p>Distribution returned by the API</p>
+              </div>
+            </div>
+            <CategoryBreakdown data={q.data} />
+          </section>
         </>
       )}
     </Shell>
@@ -73,21 +108,23 @@ function Metric({
   label,
   value,
   accent,
+  warn,
   icon,
 }: {
   label: string
   value: number
   accent?: boolean
-  icon: React.ReactNode
+  warn?: boolean
+  icon: string
 }) {
   return (
-    <div className="metric">
-      <div className={accent ? 'metric-icon accent' : 'metric-icon'}>{icon}</div>
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <small>Backend response</small>
+    <div className={`metric has-icon${accent ? ' accent' : ''}`}>
+      <div className="metric-icon">
+        <Icon name={icon} size={26} fill={accent || warn} />
       </div>
+      <span>{label}</span>
+      <strong style={warn ? { color: 'var(--lime-2)' } : undefined}>{value}</strong>
+      <small>Backend response</small>
     </div>
   )
 }
@@ -99,7 +136,7 @@ function Donut({ segments }: { segments: { value: number; color: string }[] }) {
   let offset = 0
   return (
     <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
-      <circle cx="56" cy="56" r={r} fill="none" stroke="#1d1d1d" strokeWidth="12" />
+      <circle cx="56" cy="56" r={r} fill="none" stroke="#262626" strokeWidth="12" />
       {total > 0 &&
         segments
           .filter((s) => s.value > 0)
@@ -131,9 +168,7 @@ function StatusBreakdown({ data, thresholdDays }: { data: DashboardSummary; thre
   return (
     <div className="status-block">
       <div className="donut-wrap">
-        <Donut
-          segments={STATUS_META.map((s) => ({ value: data.by_status[s.key], color: s.color }))}
-        />
+        <Donut segments={STATUS_META.map((s) => ({ value: data.by_status[s.key], color: s.color }))} />
         <div className="donut-center">
           <strong>{sum}</strong>
           <span>complaints</span>

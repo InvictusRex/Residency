@@ -1,13 +1,13 @@
 'use client'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Pin, PinOff, Trash2 } from 'lucide-react'
 import { api, errorMessage } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
 import type { Notice } from '@/lib/types'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { Dialog } from '@/components/ui/dialog'
+import { Icon } from '@/components/ui/icon'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { useToast } from '@/components/ui/toast'
 
@@ -32,60 +32,83 @@ export default function AdminNoticesPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.notices() })
 
   return (
-    <Shell title="Notice management">
+    <Shell title="Notice Management">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">ADMINISTRATION</p>
-          <h1>Notice management</h1>
-          <p className="subheading">
-            Publish official updates to residents. Important notices are pinned and emailed.
-          </p>
+          <p className="eyebrow">Admin Control Center</p>
+          <h1>Community Notices</h1>
+          <p className="subheading">Manage announcements, alerts, and community updates. Important notices are pinned and emailed.</p>
         </div>
         <button className="primary" onClick={() => setCreateOpen(true)}>
-          New notice
+          <Icon name="add" size={18} />
+          Create Notice
         </button>
       </div>
-      <section className="panel">
+
+      <div className="panel">
         {q.isPending ? (
           <LoadingState />
         ) : q.error ? (
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
         ) : q.data?.items.length ? (
-          <div className="notice-list">
-            {q.data.items.map((n) => (
-              <article className={n.is_important ? 'notice important' : 'notice'} key={n.id}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="notice-title">
-                    <strong>{n.title}</strong>
-                    {n.is_important && <span>IMPORTANT</span>}
-                  </div>
-                  <p>{n.content}</p>
-                  <small>
-                    {n.created_by.name} · {new Date(n.created_at).toLocaleDateString()}
-                  </small>
-                </div>
-                <div className="notice-actions">
-                  <button
-                    title={n.is_important ? 'Unpin' : 'Pin as important'}
-                    onClick={() => pinMutation.mutate(n)}
-                    aria-label={n.is_important ? 'Unpin notice' : 'Pin notice'}
-                  >
-                    {n.is_important ? <PinOff size={14} /> : <Pin size={14} />}
-                  </button>
-                  <button title="Edit" onClick={() => setEditing(n)} aria-label="Edit notice">
-                    <Pencil size={14} />
-                  </button>
-                  <button title="Delete" onClick={() => setDeleting(n)} aria-label="Delete notice">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </article>
-            ))}
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ width: '55%' }}>Title</th>
+                  <th>Author</th>
+                  <th>Date</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {q.data.items.map((n) => (
+                  <tr key={n.id} className="group">
+                    <td style={{ borderLeft: n.is_important ? '2px solid var(--yellow)' : '2px solid transparent' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <div className="notice-pin-cell">
+                          {n.is_important && <Icon name="push_pin" size={17} />}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="notice-title">
+                            <strong style={{ fontSize: 14 }}>{n.title}</strong>
+                            {n.is_important && <span>IMPORTANT</span>}
+                          </div>
+                          <p className="meta" style={{ margin: '5px 0 0' }}>
+                            {n.content.length > 90 ? `${n.content.slice(0, 90)}…` : n.content}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="author-chip">
+                        <span className="author-initials">{n.created_by.name.slice(0, 2).toUpperCase()}</span>
+                        <span>{n.created_by.name}</span>
+                      </div>
+                    </td>
+                    <td className="date">{new Date(n.created_at).toLocaleDateString()}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="row-actions-reveal">
+                        <button className="icon-btn" title={n.is_important ? 'Unpin' : 'Pin as important'} onClick={() => pinMutation.mutate(n)} aria-label="Toggle important">
+                          <Icon name="push_pin" size={18} />
+                        </button>
+                        <button className="icon-btn" title="Edit" onClick={() => setEditing(n)} aria-label="Edit notice">
+                          <Icon name="edit" size={18} />
+                        </button>
+                        <button className="icon-btn danger" title="Delete" onClick={() => setDeleting(n)} aria-label="Delete notice">
+                          <Icon name="delete" size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
           <EmptyState title="No notices yet" message="Create the first community notice." />
         )}
-      </section>
+      </div>
 
       <NoticeFormDialog
         key={editing?.id ?? (createOpen ? 'new' : 'closed')}
@@ -155,11 +178,11 @@ function NoticeFormDialog({
   return (
     <Dialog open={open} onClose={onClose} title={notice ? 'Edit notice' : 'Create notice'}>
       <label>
-        Title
+        <span>Title</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} autoFocus />
       </label>
       <label>
-        Content
+        <span>Content</span>
         <textarea value={content} onChange={(e) => setContent(e.target.value)} maxLength={20000} rows={7} />
       </label>
       <label className="check-row">
@@ -218,7 +241,7 @@ function ConfirmDeleteDialog({
         </button>
         <button
           className="primary"
-          style={{ background: '#e53935', color: '#fff' }}
+          style={{ background: 'var(--red)', color: '#fff', borderColor: 'var(--red)' }}
           onClick={() => m.mutate()}
           disabled={m.isPending}
         >

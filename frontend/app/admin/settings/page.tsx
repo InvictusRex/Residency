@@ -46,9 +46,9 @@ export default function AdminSettingsPage() {
     <Shell title="Settings">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">ADMINISTRATION</p>
-          <h1>Settings</h1>
-          <p className="subheading">Configure operational thresholds.</p>
+          <p className="eyebrow">Admin Control Center</p>
+          <h1>Operational Configuration</h1>
+          <p className="subheading">Adjust global platform parameters and thresholds.</p>
         </div>
       </div>
       <div className="panel settings-section" style={{ maxWidth: 640 }}>

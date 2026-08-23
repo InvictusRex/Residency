@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { ImagePlus, X } from 'lucide-react'
 import { api, errorMessage } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
+import { Icon } from '@/components/ui/icon'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 
@@ -70,16 +70,16 @@ export default function NewComplaintPage() {
     <Shell title="New complaint">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">RESIDENT SERVICES</p>
-          <h1>New complaint</h1>
-          <p className="subheading">Send a maintenance request to your residency team.</p>
+          <p className="eyebrow">Resident Services</p>
+          <h1>Initiate Sequence</h1>
+          <p className="subheading">File a new situational report. Ensure all parameters are accurate.</p>
         </div>
       </div>
       <form className="panel form-panel" onSubmit={submit}>
         <label>
-          Category
+          <span className="field-label">Classification [Category]</span>
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">Select category</option>
+            <option value="">Select category…</option>
             {cats.data?.filter((c) => c.is_active).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -88,19 +88,10 @@ export default function NewComplaintPage() {
           </select>
         </label>
 
-        <label>
-          Description
-          <textarea
-            rows={7}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the issue — what's wrong, where, and since when?"
-          />
-          <span className="field-hint">{description.length}/5000 characters</span>
-        </label>
-
         <div>
-          <span style={{ display: 'block', marginBottom: 7, color: '#9a9a9a', fontSize: 11 }}>Photo (optional)</span>
+          <span className="field-label" style={{ display: 'block', marginBottom: 8 }}>
+            Visual Evidence [Photo]
+          </span>
           <input
             id="complaint-photo"
             type="file"
@@ -122,7 +113,7 @@ export default function NewComplaintPage() {
               pickFile(e.dataTransfer.files?.[0] ?? null)
             }}
           >
-            <ImagePlus size={20} />
+            <Icon name="upload_file" size={28} />
             <strong>Drop an image here or click to browse</strong>
             <span className="meta">JPEG, PNG or WEBP · up to 5 MB</span>
           </label>
@@ -130,21 +121,33 @@ export default function NewComplaintPage() {
             <div className="upload-preview">
               <img src={preview} alt="Selected photo preview" />
               <div>
-                <strong style={{ color: '#e8e8e8', fontSize: 11 }}>{file.name}</strong>
+                <strong style={{ color: 'var(--text-hi)', fontSize: 12 }}>{file.name}</strong>
                 <p className="meta" style={{ margin: '3px 0 6px' }}>
                   {(file.size / 1024 / 1024).toFixed(2)} MB
                 </p>
                 <button className="text-btn" type="button" onClick={() => setFile(null)}>
-                  <X size={13} /> Remove photo
+                  <Icon name="close" size={14} /> Remove photo
                 </button>
               </div>
             </div>
           )}
         </div>
 
+        <label>
+          <span className="field-label">Detailed Report [Description]</span>
+          <textarea
+            rows={7}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe the anomaly in detail…"
+          />
+          <span className="field-hint">{description.length}/5000 characters</span>
+        </label>
+
         {(error || m.error) && <p className="form-error">{error || errorMessage(m.error)}</p>}
-        <button className="primary" type="submit" disabled={m.isPending}>
-          {m.isPending ? 'Submitting…' : 'Submit complaint'}
+        <button className="primary" type="submit" disabled={m.isPending} style={{ justifySelf: 'flex-end' }}>
+          {m.isPending ? 'Submitting…' : 'Submit Complaint'}
+          {!m.isPending && <Icon name="arrow_forward" size={18} />}
         </button>
       </form>
     </Shell>

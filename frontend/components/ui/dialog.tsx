@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useId, useRef } from 'react'
-import { X } from 'lucide-react'
+import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/utils'
 
 export function Dialog({
@@ -59,7 +59,7 @@ export function Dialog({
             {description && <p id={descId}>{description}</p>}
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close dialog">
-            <X size={18} />
+            <Icon name="close" size={18} />
           </button>
         </div>
         <div className={cn('dialog-body')}>{children}</div>

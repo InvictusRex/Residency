@@ -30,7 +30,6 @@ async function parseError(response: Response): Promise<ApiError> {
   try {
     body = await response.json()
   } catch {
-    // non-JSON error body
   }
   const fieldErrors = body.errors?.reduce<Record<string, string>>((acc, e) => {
     const field = e.loc?.at(-1)

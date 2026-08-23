@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
+import { Icon } from '@/components/ui/icon'
 
 type ToastKind = 'success' | 'error' | 'info'
 type Toast = { id: number; kind: ToastKind; message: string }
@@ -37,12 +37,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div className="toast-viewport" role="region" aria-live="polite" aria-label="Notifications">
         {toasts.map((t) => (
           <div key={t.id} className={`toast toast-${t.kind}`}>
-            {t.kind === 'success' && <CheckCircle2 size={15} color="#8ea000" />}
-            {t.kind === 'error' && <AlertTriangle size={15} color="#e53935" />}
-            {t.kind === 'info' && <Info size={15} color="#d4d800" />}
+            {t.kind === 'success' && <Icon name="check_circle" size={17} fill />}
+            {t.kind === 'error' && <Icon name="warning" size={17} />}
+            {t.kind === 'info' && <Icon name="info" size={17} />}
             <span>{t.message}</span>
             <button onClick={() => dismiss(t.id)} aria-label="Dismiss notification">
-              <X size={13} />
+              <Icon name="close" size={14} />
             </button>
           </div>
         ))}

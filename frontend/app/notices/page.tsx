@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Bell, Megaphone } from 'lucide-react'
 import { api, buildNoticeQuery } from '@/lib/api/client'
 import { queryKeys } from '@/lib/query-keys'
+import { Icon } from '@/components/ui/icon'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
@@ -25,7 +25,7 @@ export default function NoticesPage() {
     <Shell title="Notices">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">COMMUNITY UPDATES</p>
+          <p className="eyebrow">Community Updates</p>
           <h1>Notices</h1>
           <p className="subheading">Official announcements from your community. Important notices are pinned first.</p>
         </div>
@@ -55,7 +55,7 @@ export default function NoticesPage() {
                     )}
                     <article className={n.is_important ? 'notice important' : 'notice'}>
                       <div className="notice-icon">
-                        {n.is_important ? <Megaphone size={16} /> : <Bell size={16} />}
+                        {n.is_important ? <Icon name="campaign" size={18} fill /> : <Icon name="notifications" size={18} />}
                       </div>
                       <div>
                         <div className="notice-title">
