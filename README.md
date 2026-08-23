@@ -50,7 +50,7 @@ See [docs/architecture.md](docs/architecture.md) for details.
 ```
 .
 ├── app/
-│   ├── main.py               # App factory, CORS, exception handlers, /uploads mount
+│   ├── main.py               # App factory, CORS, exception handlers
 │   ├── seed.py               # Dev seeding script
 │   ├── api/
 │   │   ├── router.py         # Aggregates route modules under /api/v1
@@ -253,8 +253,18 @@ pytest
 - Accepted content types: `image/jpeg` (.jpg/.jpeg), `image/png`, `image/webp`; the file extension must match the content type.
 - Maximum size: `MAX_UPLOAD_SIZE_MB` (default 5 MB); empty files are rejected.
 - Files are stored as `uploads/complaints/<uuid-hex>.<ext>`; the database stores only the relative path.
-- Photos are served publicly via the static files mount at `/uploads` (e.g. `/uploads/complaints/<file>.png`). Responses expose the URL as `photo_url`.
+- Photos are **not publicly accessible**. They are served exclusively through the authenticated endpoint
+  `GET /api/v1/complaints/{complaint_id}/photo`: residents can fetch only their own complaint photos,
+  admins can fetch any. Anonymous access returns 401, other residents' photos return 404, and missing
+  files return 404. Responses expose the URL as `photo_url` (e.g. `/api/v1/complaints/<id>/photo`);
+  the internal filesystem path is never exposed.
 - Deleting or replacing photo storage is handled exclusively through `StorageService`.
+- Login and registration endpoints are rate limited to 10 requests per minute per client IP;
+  exceeding the limit returns 429 with code `rate_limited`. The limiter is in-process, so a
+  horizontally scaled deployment should enforce equivalent limits at the reverse proxy level.
+- Email delivery uses the SMTP abstraction; for production, Resend's SMTP relay works out of the box:
+  set `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=465`, `SMTP_USERNAME=resend`,
+  `SMTP_PASSWORD=<RESEND_API_KEY>`, and a verified `EMAIL_FROM` (see `.env.example`).
 
 ## Email Configuration
 
@@ -290,8 +300,14 @@ Cascade rules: deleting a complaint cascades to its history rows; users/categori
 - `DATABASE_URL` is fully injectable; point it at a managed PostgreSQL instance.
 - Apply migrations with `alembic upgrade head` (or rely on the backend container's startup command, as docker-compose does).
 - `CORS_ORIGINS` accepts a comma-separated list of origins.
-- The default local-disk upload storage is **ephemeral** on platforms such as Render or Railway: uploaded photos will be lost on redeploy or restart. Production deployments must implement an object-storage provider (e.g. S3) behind `StorageService.save_file/delete_file/get_file_url`; the rest of the codebase depends only on this interface, so no other changes are required.
+- The default local-disk upload storage is **ephemeral** on platforms such as Render or Railway: uploaded photos will be lost on redeploy or restart. Production deployments must implement an object-storage provider (e.g. S3) behind `StorageService.save_file/delete_file/resolve_file`; the rest of the codebase depends only on this interface, so no other changes are required. On a self-managed Docker host, mount a persistent volume (or bind mount such as `/srv/residency/uploads:/app/uploads`) so photos survive container recreation.
 - Set a strong `JWT_SECRET_KEY` and disable seeding before exposing the service publicly.
+- Self-hosted deployment (Debian + Docker + Cloudflare Tunnel): run PostgreSQL and the backend via
+  `docker compose`, bind-mount a host directory for uploads (e.g. `/srv/residency/uploads:/app/uploads`),
+  and expose only the tunnel — never publish the backend or PostgreSQL ports publicly. Point the
+  tunnel hostname `api.residency.<domain>` at the backend container's port 8000 and
+  `residency.<domain>` at the frontend, then set `CORS_ORIGINS=https://residency.<domain>`.
+- Schedule regular `pg_dump` backups of the database and file-level backups of the uploads volume.
 
 ## Example End-to-End Workflow
 

@@ -110,3 +110,20 @@ The trigger condition lives exclusively in the create route (`if notice.is_impor
 ## Testing Note
 
 Because `EMAIL_ENABLED=false` in tests (set by `tests/conftest.py`), both flows are exercised end-to-end except the actual SMTP hop: transactions commit, background tasks run inside TestClient requests, and each attempted send logs a skip line. To observe real delivery locally, set `EMAIL_ENABLED=true` plus `SMTP_HOST`, `SMTP_PORT`, and credentials in `.env`.
+
+## Production Provider (Resend)
+
+The NotificationService targets SMTP only, which keeps the provider swappable. Resend exposes a standard
+SMTP relay, so production configuration requires no code change:
+
+`
+EMAIL_ENABLED=true
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_USERNAME=resend
+SMTP_PASSWORD=<RESEND_API_KEY>
+EMAIL_FROM="Society Portal <verified@your-domain>"
+`
+
+The API key is read from the environment at send time and is never logged. Delivery failures are caught,
+logged, and never propagate into request handling or database transactions.

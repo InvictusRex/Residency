@@ -382,7 +382,8 @@
     "wave_6": "done",
     "wave_7": "done",
     "e2e_verification": "done: 64/64 checks pass against live server",
-    "pytest": "102 passed"
+    "pytest": "102 passed",
+    "final_qa_audit": "done: 137 pytest passed, 68/68 e2e, docker verified"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",
@@ -390,7 +391,14 @@
     "complaint photo upload now raises FileUploadError(file_too_large) instead of silently truncating at MAX_UPLOAD_SIZE_MB",
     "route modules corrected to relative paths so api_router prefix /api/v1 is not doubled",
     "dev JWT default secret extended to >=32 bytes (InsecureKeyLengthWarning resolved)",
-    "alembic.ini path_separator set (removes deprecation warning)"
+    "alembic.ini path_separator set (removes deprecation warning)",
+    "PHOTOS: removed public /uploads StaticFiles mount; added authenticated GET /api/v1/complaints/{id}/photo (owner or admin; 401 anon; 404 other-resident/no-photo/missing-file); ComplaintOut.photo_url now points at API path",
+    "STORAGE: StorageService.resolve_file/media_type_for added with root-dir containment check; fixed latent double-complaints-path bug in delete_file",
+    "CONCURRENCY: status transitions now SELECT ... FOR UPDATE and re-validate transition after lock (prevents OPEN->IN_PROGRESS vs OPEN->RESOLVED race)",
+    "RATE LIMIT: in-process sliding window 10 req/min/IP on login+register -> 429 rate_limited (documented single-instance scope)",
+    "DOCKER: uploads named volume mounted at /app/uploads so photos survive container recreation (verified by force-recreate test)",
+    "SETTINGS: warn log when stored threshold value is unparsable",
+    "RESEND: production SMTP-relay configuration documented in .env.example, README and notification-flow.md"
   ],
   "security_review": {
     "date": "2026-08-23",

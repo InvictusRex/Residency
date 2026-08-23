@@ -42,9 +42,9 @@ Two cross-cutting infrastructure concerns sit behind narrow service interfaces s
 
 ### StorageService (`app/services/storage_service.py`)
 
-Interface: `save_file(data, original_filename, content_type) -> StoredFile`, `delete_file(storage_path)`, `get_file_url(storage_path)`.
+Interface: `save_file(data, original_filename, content_type) -> StoredFile`, `delete_file(storage_path)`, `resolve_file(storage_path)`, `media_type_for(storage_path)`.
 
-The default implementation writes to the local filesystem under `{UPLOAD_DIR}/complaints/<uuid-hex>.<ext>`, validates content type against extension, enforces `MAX_UPLOAD_SIZE_MB`, and rejects unsafe paths on delete. The database stores only the relative path; files are served publicly through a `StaticFiles` mount at `/uploads`. To move to S3 or another object store, implement the same three methods — no other module needs to change.
+The default implementation writes to the local filesystem under `{UPLOAD_DIR}/complaints/<uuid-hex>.<ext>`, validates content type against extension and file magic bytes, enforces `MAX_UPLOAD_SIZE_MB`, and rejects unsafe paths on resolve/delete. The database stores only the relative path; files are served exclusively through the authenticated endpoint `GET /api/v1/complaints/{id}/photo` (owner or admin), so no public static route exists. To move to S3 or another object store, implement the same methods — no other module needs to change.
 
 ### NotificationService (`app/services/notification_service.py`)
 

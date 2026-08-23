@@ -99,7 +99,7 @@ Multipart form data:
 | --- | --- | --- |
 | category_id | UUID | must reference an active category |
 | description | string | 5..5000 chars |
-| photo | file, optional | JPEG (.jpg/.jpeg) / PNG / WebP; extension must match content type; max `MAX_UPLOAD_SIZE_MB` (default 5 MB); empty files rejected |
+| photo | file, optional | JPEG (.jpg/.jpeg) / PNG / WebP; extension must match content type AND file magic bytes; max `MAX_UPLOAD_SIZE_MB` (default 5 MB); empty files rejected |
 
 New complaints always start OPEN with priority LOW. An initial history row ("Complaint created") is written in the same transaction.
 
@@ -109,7 +109,7 @@ Response 201 — `ComplaintOut`:
 {
   "id": "...",
   "description": "...",
-  "photo_url": "/uploads/complaints/<file>.png",
+  "photo_url": "/api/v1/complaints/<id>/photo",
   "priority": "LOW",
   "status": "OPEN",
   "created_at": "...",
