@@ -214,7 +214,7 @@ Health probes (at the root, not under `/api/v1`):
 
 The frontend lives in `frontend/` and is a Next.js 16 App Router application (TypeScript, Tailwind v4,
 TanStack Query) that talks directly to the backend REST API. It was built to consume the exact
-`/api/v1` contract described above — no mocks.
+`/api/v1` contract described above ï¿½ no mocks.
 
 ### Setup
 
@@ -330,6 +330,18 @@ against `main`: Python 3.12 on ubuntu-latest with a PostgreSQL 16 service contai
 verifies imports, runs `alembic upgrade head` against a clean database, then executes the full
 pytest suite against a second clean database. Email delivery is disabled in CI; no production
 secrets are used.
+
+### Container publishing (GHCR)
+
+`.github/workflows/docker-publish.yml` triggers whenever a tag matching `v*` is pushed. It builds
+the backend image from the root `Dockerfile` and pushes it to GitHub Container Registry:
+
+- Image: `ghcr.io/<owner>/<repo>/residency-backend`
+- Tags: the exact version tag (e.g. `v1.0.0-backend-complete`) plus `latest`
+
+A `.dockerignore` keeps the build context lean (excludes `frontend/`, `.venv`, uploads, docs, etc.).
+After the tag is pushed, create the GitHub Release from that tag as usual â€” the image will already
+be available in the package.
 
 
 ## Photo Upload Behavior
