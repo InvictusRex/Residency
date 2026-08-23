@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "testing", "production"] = "development"
     DEBUG: bool = True
     DATABASE_URL: str = "postgresql+psycopg://smt:smt@localhost:5433/society_maintenance"
-    JWT_SECRET_KEY: str = "dev-secret-change-me"
+    JWT_SECRET_KEY: str = "dev-only-secret-please-change-me-0123456789abcdef"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
