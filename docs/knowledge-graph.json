@@ -383,7 +383,8 @@
     "wave_7": "done",
     "e2e_verification": "done: 64/64 checks pass against live server",
     "pytest": "102 passed",
-    "final_qa_audit": "done: 137 pytest passed, 68/68 e2e, docker verified"
+    "final_qa_audit": "done: 137 pytest passed, 68/68 e2e, docker verified",
+    "ci_preparation": "done: GitHub Actions workflow added; conftest parameterized via TEST_DATABASE_URL; 137 passed locally on both default and override paths"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",
@@ -398,7 +399,10 @@
     "RATE LIMIT: in-process sliding window 10 req/min/IP on login+register -> 429 rate_limited (documented single-instance scope)",
     "DOCKER: uploads named volume mounted at /app/uploads so photos survive container recreation (verified by force-recreate test)",
     "SETTINGS: warn log when stored threshold value is unparsable",
-    "RESEND: production SMTP-relay configuration documented in .env.example, README and notification-flow.md"
+    "RESEND: production SMTP-relay configuration documented in .env.example, README and notification-flow.md",
+    "CI: tests/conftest.py parameterized via TEST_DATABASE_URL env (default unchanged); admin URL derived with render_as_string(hide_password=False) - str(URL) masks password as literal *** which caused auth failures",
+    "CI: DATABASE_URL defaults pinned to 127.0.0.1 instead of localhost to avoid IPv6 loopback port hijacking by WSL relay on dev machines",
+    "CI: bounded retry around test-database bootstrap for environmental flakiness"
   ],
   "security_review": {
     "date": "2026-08-23",

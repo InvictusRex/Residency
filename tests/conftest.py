@@ -1,7 +1,15 @@
 import os
 import tempfile
+import time
 
-os.environ["DATABASE_URL"] = "postgresql+psycopg://smt:smt@localhost:5433/smt_test"
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import OperationalError
+
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://smt:smt@127.0.0.1:5433/smt_test",
+)
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["EMAIL_ENABLED"] = "false"
 os.environ["UPLOAD_DIR"] = str(tempfile.mkdtemp(prefix="smt_uploads_test_"))
 
@@ -14,8 +22,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-ADMIN_URL = "postgresql+psycopg://smt:smt@localhost:5433/postgres"
-TEST_DB_URL = os.environ["DATABASE_URL"]
+_parsed_url = make_url(TEST_DATABASE_URL)
+TEST_DB_NAME = _parsed_url.database or "smt_test"
+ADMIN_URL = _parsed_url.set(database="postgres").render_as_string(hide_password=False)
+TEST_DB_URL = TEST_DATABASE_URL
 API = "/api/v1"
 ADMIN_EMAIL = "admin@example.com"
 ADMIN_PASSWORD = "Admin123!ChangeMe"
@@ -31,19 +41,26 @@ TABLES = [
 
 
 def _recreate_test_database() -> None:
-    admin_engine = create_engine(ADMIN_URL, isolation_level="AUTOCOMMIT")
-    try:
-        with admin_engine.connect() as conn:
-            conn.execute(
-                text(
-                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-                    "WHERE datname = 'smt_test' AND pid <> pg_backend_pid()"
+    last_error: Exception | None = None
+    for attempt in range(5):
+        admin_engine = create_engine(ADMIN_URL, isolation_level="AUTOCOMMIT")
+        try:
+            with admin_engine.connect() as conn:
+                conn.execute(
+                    text(
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                        f"WHERE datname = '{TEST_DB_NAME}' AND pid <> pg_backend_pid()"
+                    )
                 )
-            )
-            conn.execute(text("DROP DATABASE IF EXISTS smt_test"))
-            conn.execute(text("CREATE DATABASE smt_test"))
-    finally:
-        admin_engine.dispose()
+                conn.execute(text(f"DROP DATABASE IF EXISTS {TEST_DB_NAME}"))
+                conn.execute(text(f"CREATE DATABASE {TEST_DB_NAME}"))
+            return
+        except OperationalError as exc:
+            last_error = exc
+            time.sleep(2.0 * (attempt + 1))
+        finally:
+            admin_engine.dispose()
+    raise last_error
 
 
 def _run_migrations() -> None:
@@ -55,6 +72,16 @@ _recreate_test_database()
 _run_migrations()
 
 engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
+_last_probe_error: Exception | None = None
+for _attempt in range(5):
+    try:
+        with engine.connect():
+            break
+    except OperationalError as _exc:
+        _last_probe_error = _exc
+        time.sleep(2.0 * (_attempt + 1))
+else:
+    raise _last_probe_error
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 

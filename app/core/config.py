@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Society Maintenance Tracker"
     ENVIRONMENT: Literal["development", "testing", "production"] = "development"
     DEBUG: bool = True
-    DATABASE_URL: str = "postgresql+psycopg://smt:smt@localhost:5433/society_maintenance"
+    DATABASE_URL: str = "postgresql+psycopg://smt:smt@127.0.0.1:5433/society_maintenance"
     JWT_SECRET_KEY: str = "dev-only-secret-please-change-me-0123456789abcdef"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120

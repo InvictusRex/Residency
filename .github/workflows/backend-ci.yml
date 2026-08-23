@@ -1,0 +1,62 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    name: Migrations and test suite (PostgreSQL)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: smt
+          POSTGRES_PASSWORD: smt
+          POSTGRES_DB: society_maintenance_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U smt -d society_maintenance_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://smt:smt@127.0.0.1:5432/smt_test
+      DATABASE_URL: postgresql+psycopg://smt:smt@127.0.0.1:5432/society_maintenance_ci
+      EMAIL_ENABLED: "false"
+      UPLOAD_DIR: ./uploads_ci
+      JWT_SECRET_KEY: ci-only-secret-not-used-in-production-0123456789abcdef
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify Python environment
+        run: |
+          python --version
+          python -c "import fastapi, sqlalchemy, alembic, pydantic, jwt, argon2, psycopg; print('imports ok', fastapi.__version__, sqlalchemy.__version__)"
+
+      - name: Verify Alembic migrations on a clean database
+        run: alembic upgrade head
+
+      - name: Run full test suite
+        run: pytest -v --tb=short

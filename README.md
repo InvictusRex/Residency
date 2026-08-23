@@ -98,7 +98,7 @@ Key variables:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | `postgresql+psycopg://smt:smt@localhost:5433/society_maintenance` | SQLAlchemy connection string |
+| `DATABASE_URL` | `postgresql+psycopg://smt:smt@127.0.0.1:5433/society_maintenance` | SQLAlchemy connection string |
 | `JWT_SECRET_KEY` | dev value | HS256 signing key — change for any real deployment |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `120` | Access token lifetime |
 | `CORS_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Comma-separated allowed origins |
@@ -245,7 +245,19 @@ Tokens are HS256-signed JWTs containing `sub` (user id), `role`, `iat`, and `exp
 pytest
 ```
 
-`tests/conftest.py` connects to the local Postgres on port 5433, drops/recreates a dedicated `smt_test` database, applies all Alembic migrations, truncates tables between tests, and points uploads at a temporary directory. The suite requires the `db` compose service to be running; no other setup is needed.
+The suite is self-contained: it connects to the local PostgreSQL from `TEST_DATABASE_URL`
+(default: `postgresql+psycopg://smt:smt@127.0.0.1:5433/smt_test`), drops/recreates that test
+database, applies all Alembic migrations, and points uploads at a temporary directory.
+No seed data, running server, or email configuration is required.
+
+### CI
+
+GitHub Actions (`.github/workflows/backend-ci.yml`) runs on every push to and pull request
+against `main`: Python 3.12 on ubuntu-latest with a PostgreSQL 16 service container. The job
+verifies imports, runs `alembic upgrade head` against a clean database, then executes the full
+pytest suite against a second clean database. Email delivery is disabled in CI; no production
+secrets are used.
+
 
 ## Photo Upload Behavior
 
