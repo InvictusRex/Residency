@@ -6,7 +6,6 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.api.routes.health import router as health_router
@@ -90,11 +89,6 @@ def create_app() -> FastAPI:
 
     application.include_router(api_router)
     application.include_router(health_router)
-    application.mount(
-        "/uploads",
-        StaticFiles(directory=settings.UPLOAD_DIR, check_dir=False),
-        name="uploads",
-    )
     return application
 
 

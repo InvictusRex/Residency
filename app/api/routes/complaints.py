@@ -2,15 +2,16 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user, require_admin, require_resident
-from app.core.exceptions import FileUploadError
 from app.core.enums import ComplaintPriority, ComplaintStatus
+from app.core.exceptions import FileUploadError, NotFoundError
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.complaint import ComplaintOut, ComplaintListResponse, PriorityUpdateRequest, StatusUpdateRequest
+from app.schemas.complaint import ComplaintListResponse, ComplaintOut, PriorityUpdateRequest, StatusUpdateRequest
 from app.schemas.complaint_history import HistoryListResponse
 from app.services import complaint_service
 from app.services.notification_service import notification_service
@@ -44,18 +45,7 @@ async def create_complaint(
         filename = photo.filename or ""
         uploaded = (data, filename, content_type)
     complaint = complaint_service.create_complaint(db, resident, category_id, description, uploaded)
-    return ComplaintOut(
-        id=complaint.id,
-        description=complaint.description,
-        photo_url=storage_service.get_file_url(complaint.photo_path),
-        priority=complaint.priority,
-        status=complaint.status,
-        created_at=complaint.created_at,
-        updated_at=complaint.updated_at,
-        resolved_at=complaint.resolved_at,
-        resident=complaint.resident,
-        category=complaint.category,
-    )
+    return complaint_service.complaint_to_out(complaint)
 
 
 @router.get(
@@ -85,21 +75,7 @@ def list_complaints(
         total=total,
         limit=limit,
         offset=offset,
-        items=[
-            ComplaintOut(
-                id=item.id,
-                description=item.description,
-                photo_url=storage_service.get_file_url(item.photo_path),
-                priority=item.priority,
-                status=item.status,
-                created_at=item.created_at,
-                updated_at=item.updated_at,
-                resolved_at=item.resolved_at,
-                resident=item.resident,
-                category=item.category,
-            )
-            for item in items
-        ],
+        items=[complaint_service.complaint_to_out(item) for item in items],
     )
 
 
@@ -116,17 +92,39 @@ def get_complaint(
     user: User = Depends(get_current_user),
 ) -> ComplaintOut:
     complaint = complaint_service.get_complaint_scoped(db, complaint_id, user)
-    return ComplaintOut(
-        id=complaint.id,
-        description=complaint.description,
-        photo_url=storage_service.get_file_url(complaint.photo_path),
-        priority=complaint.priority,
-        status=complaint.status,
-        created_at=complaint.created_at,
-        updated_at=complaint.updated_at,
-        resolved_at=complaint.resolved_at,
-        resident=complaint.resident,
-        category=complaint.category,
+    return complaint_service.complaint_to_out(complaint)
+
+
+@router.get(
+    "/complaints/{complaint_id}/photo",
+    summary="Get complaint photo",
+    description=(
+        "Streams the photo attached to a complaint through an authenticated endpoint. "
+        "Residents can only access their own complaint photos; admins can access any. "
+        "Returns 404 when the complaint has no photo or the stored file is missing. "
+        "The internal storage path is never exposed."
+    ),
+    response_class=FileResponse,
+    responses={
+        401: {"description": "Not authenticated"},
+        403: {"description": "Not allowed to view this complaint"},
+        404: {"description": "Complaint, photo or underlying file not found"},
+    },
+)
+def get_complaint_photo(
+    complaint_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> FileResponse:
+    complaint = complaint_service.get_complaint_scoped(db, complaint_id, user)
+    if not complaint.photo_path:
+        raise NotFoundError("photo_not_found")
+    file_path = storage_service.resolve_file(complaint.photo_path)
+    if file_path is None:
+        raise NotFoundError("photo_not_found")
+    return FileResponse(
+        file_path,
+        media_type=storage_service.media_type_for(complaint.photo_path),
     )
 
 
@@ -187,18 +185,7 @@ def update_complaint_status(
         new_status=complaint.status.value,
         note=payload.note,
     )
-    return ComplaintOut(
-        id=complaint.id,
-        description=complaint.description,
-        photo_url=storage_service.get_file_url(complaint.photo_path),
-        priority=complaint.priority,
-        status=complaint.status,
-        created_at=complaint.created_at,
-        updated_at=complaint.updated_at,
-        resolved_at=complaint.resolved_at,
-        resident=complaint.resident,
-        category=complaint.category,
-    )
+    return complaint_service.complaint_to_out(complaint)
 
 
 @router.patch(
@@ -220,15 +207,4 @@ def update_complaint_priority(
 ) -> ComplaintOut:
     complaint = complaint_service.get_complaint_scoped(db, complaint_id, admin)
     complaint = complaint_service.update_priority(db, complaint, payload.priority)
-    return ComplaintOut(
-        id=complaint.id,
-        description=complaint.description,
-        photo_url=storage_service.get_file_url(complaint.photo_path),
-        priority=complaint.priority,
-        status=complaint.status,
-        created_at=complaint.created_at,
-        updated_at=complaint.updated_at,
-        resolved_at=complaint.resolved_at,
-        resident=complaint.resident,
-        category=complaint.category,
-    )
+    return complaint_service.complaint_to_out(complaint)

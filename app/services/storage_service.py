@@ -36,8 +36,9 @@ class StoredFile:
 class StorageService:
     def __init__(self, base_dir: Path | None = None) -> None:
         if base_dir is None:
-            base_dir = Path(settings.UPLOAD_DIR) / "complaints"
-        self._base_dir: Path = base_dir.resolve()
+            base_dir = Path(settings.UPLOAD_DIR)
+        self._root_dir: Path = base_dir.resolve()
+        self._complaints_dir: Path = self._root_dir / "complaints"
 
     @staticmethod
     def _sniff_image_format(data: bytes) -> str | None:
@@ -74,7 +75,7 @@ class StorageService:
             raise ValueError(_ERROR_FILE_TOO_LARGE)
 
         filename = f"{uuid.uuid4().hex}{canonical_ext}"
-        destination = self._base_dir / filename
+        destination = self._complaints_dir / filename
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(data)
 
@@ -87,17 +88,31 @@ class StorageService:
         if candidate.is_absolute() or _PARENT_DIR_COMPONENT in candidate.parts:
             logger.warning("rejected delete for unsafe path: %s", storage_path)
             return
-        target = (self._base_dir / candidate).resolve()
-        if not target.is_relative_to(self._base_dir):
+        target = (self._root_dir / candidate).resolve()
+        if not target.is_relative_to(self._root_dir):
             logger.warning("rejected delete escaping base dir: %s", storage_path)
             return
         target.unlink(missing_ok=True)
 
-    def get_file_url(self, storage_path: str | None) -> str | None:
-        if storage_path is None:
+    def resolve_file(self, storage_path: str | None) -> Path | None:
+        if not storage_path:
             return None
-        normalized = PurePosixPath(storage_path.replace("\\", "/")).as_posix().lstrip("/")
-        return f"{_UPLOADS_URL_PREFIX_POSIX}/{normalized}"
+        candidate = Path(storage_path)
+        if candidate.is_absolute() or _PARENT_DIR_COMPONENT in candidate.parts:
+            logger.warning("rejected resolve for unsafe path: %s", storage_path)
+            return None
+        target = (self._root_dir / candidate).resolve()
+        if not target.is_relative_to(self._root_dir):
+            logger.warning("rejected resolve escaping base dir: %s", storage_path)
+            return None
+        if not target.is_file():
+            return None
+        return target
+
+    def media_type_for(self, storage_path: str) -> str:
+        suffix = PurePosixPath(storage_path.replace("\\", "/")).suffix.lower()
+        media_types = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+        return media_types.get(suffix, "application/octet-stream")
 
 
 storage_service = StorageService()
