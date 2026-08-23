@@ -8,7 +8,7 @@ import { queryKeys } from '@/lib/query-keys'
 import type { Status } from '@/lib/types'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
-import { ComplaintTable } from '@/components/complaints/complaint-table'
+import { ComplaintCards } from '@/components/complaints/complaint-cards'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Pagination } from '@/components/shared/pagination'
 
@@ -72,11 +72,19 @@ export default function MyComplaintsPage() {
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
         ) : q.data?.items.length ? (
           <>
-            <ComplaintTable items={q.data.items} token={token!} />
+            <ComplaintCards items={q.data.items} />
             <Pagination page={page} pageSize={PAGE_SIZE} total={q.data.total} onChange={setPage} />
           </>
         ) : (
-          <EmptyState title="No complaints yet" message="File a new complaint to get started." />
+          <EmptyState
+            title="No complaints yet"
+            message="File a new complaint and it will appear here."
+            action={
+              <button className="primary" onClick={() => router.push('/my-complaints/new')}>
+                <Plus size={16} /> New complaint
+              </button>
+            }
+          />
         )}
       </section>
     </Shell>

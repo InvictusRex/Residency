@@ -52,30 +52,44 @@ export default function AdminCategoriesPage() {
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
         ) : q.data?.length ? (
           <div>
-            {q.data.map((c) => (
-              <div className="category-card" key={c.id}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <strong style={{ color: '#e8e8e8', fontSize: 12, fontWeight: 600 }}>{c.name}</strong>
-                    <span className={`cat-badge ${c.is_active ? 'active' : 'inactive'}`}>
-                      {c.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  <p className="cat-desc">{c.description || 'No description'}</p>
+            {[
+              { label: 'Active categories', active: true },
+              { label: 'Inactive categories', active: false },
+            ].map((group) => {
+              const groupItems = q.data!.filter((c) => c.is_active === group.active)
+              if (!groupItems.length) return null
+              return (
+                <div key={group.label}>
+                  <p className="section-label" style={{ margin: '18px 22px 6px' }}>
+                    {group.label}
+                  </p>
+                  {groupItems.map((c) => (
+                    <div className="category-card" key={c.id}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <strong style={{ color: '#e8e8e8', fontSize: 12, fontWeight: 600 }}>{c.name}</strong>
+                          <span className={`cat-badge ${c.is_active ? 'active' : 'inactive'}`}>
+                            {c.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <p className="cat-desc">{c.description || 'No description'}</p>
+                      </div>
+                      <div className="cat-actions">
+                        <button onClick={() => setEditing(c)}>Edit</button>
+                        {c.is_active ? (
+                          <button onClick={() => toggleActive.mutate(c)}>Deactivate</button>
+                        ) : (
+                          <button onClick={() => toggleActive.mutate(c)}>Activate</button>
+                        )}
+                        <button className="danger" onClick={() => setDeleting(c)}>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="cat-actions">
-                  <button onClick={() => setEditing(c)}>Edit</button>
-                  {c.is_active ? (
-                    <button onClick={() => toggleActive.mutate(c)}>Deactivate</button>
-                  ) : (
-                    <button onClick={() => toggleActive.mutate(c)}>Activate</button>
-                  )}
-                  <button className="danger" onClick={() => setDeleting(c)}>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <EmptyState title="No categories yet" message="Create the first complaint category." />

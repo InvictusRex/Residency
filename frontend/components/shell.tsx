@@ -15,17 +15,17 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 
-type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; admin?: boolean; resident?: boolean }
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; admin?: boolean; resident?: boolean; group: string }
 
 const nav: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true },
-  { href: '/complaints', label: 'Complaints', icon: ClipboardList, admin: true },
-  { href: '/my-complaints', label: 'My complaints', icon: ClipboardList, resident: true },
-  { href: '/notices', label: 'Notices', icon: Bell },
-  { href: '/admin/categories', label: 'Categories', icon: Tags, admin: true },
-  { href: '/admin/notices', label: 'Notice management', icon: Bell, admin: true },
-  { href: '/admin/settings', label: 'Settings', icon: Settings, admin: true },
-  { href: '/profile', label: 'Profile', icon: UserCircle },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true, group: 'Overview' },
+  { href: '/complaints', label: 'Complaints', icon: ClipboardList, admin: true, group: 'Overview' },
+  { href: '/my-complaints', label: 'My complaints', icon: ClipboardList, resident: true, group: 'Overview' },
+  { href: '/notices', label: 'Notices', icon: Bell, group: 'Community' },
+  { href: '/admin/categories', label: 'Categories', icon: Tags, admin: true, group: 'Administration' },
+  { href: '/admin/notices', label: 'Notice management', icon: Bell, admin: true, group: 'Administration' },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, admin: true, group: 'Administration' },
+  { href: '/profile', label: 'Profile', icon: UserCircle, group: 'Account' },
 ]
 
 export function Shell({ children, title }: { children: React.ReactNode; title: string }) {
@@ -49,6 +49,13 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
     return true
   })
 
+  const groups = allowed.reduce<{ label: string; items: NavItem[] }[]>((acc, item) => {
+    const existing = acc.find((g) => g.label === item.group)
+    if (existing) existing.items.push(item)
+    else acc.push({ label: item.group, items: [item] })
+    return acc
+  }, [])
+
   return (
     <div className="residency-app">
       <aside className={mobile ? 'sidebar open' : 'sidebar'}>
@@ -68,20 +75,26 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
             <small>Management portal</small>
           </div>
         </div>
-        <p className="nav-label">Workspace</p>
         <nav>
-          {allowed.map(({ href, label, icon: Icon }) => (
-            <button
-              key={href}
-              className={pathname === href ? 'nav-item active' : 'nav-item'}
-              onClick={() => {
-                setMobile(false)
-                router.push(href)
-              }}
-            >
-              <Icon size={17} />
-              <span>{label}</span>
-            </button>
+          {groups.map((group) => (
+            <div key={group.label}>
+              <p className="nav-group-label" style={{ margin: '18px 10px 6px' }}>
+                {group.label}
+              </p>
+              {group.items.map(({ href, label, icon: Icon }) => (
+                <button
+                  key={href}
+                  className={pathname === href ? 'nav-item active' : 'nav-item'}
+                  onClick={() => {
+                    setMobile(false)
+                    router.push(href)
+                  }}
+                >
+                  <Icon size={17} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="sidebar-bottom">

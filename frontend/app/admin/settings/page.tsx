@@ -51,28 +51,36 @@ export default function AdminSettingsPage() {
           <p className="subheading">Configure operational thresholds.</p>
         </div>
       </div>
-      <form className="panel form-panel" onSubmit={save}>
-        <label>
-          Overdue threshold (days)
-          <input
-            type="number"
-            min={1}
-            max={365}
-            step={1}
-            value={value}
-            onChange={(e) => setDays(e.target.value === '' ? undefined : Number(e.target.value))}
-          />
-          <small>
-            A complaint is overdue when it remains unresolved beyond this many days. Choose a value from 1 to 365.
-            Changes apply immediately to complaint listings, filtering, sorting, and the dashboard.
-          </small>
-        </label>
-        {q.error && <p className="form-error">{errorMessage(q.error)}</p>}
-        {error && <p className="form-error">{error}</p>}
-        <button className="primary" type="submit" disabled={m.isPending}>
-          {m.isPending ? 'Saving…' : 'Save settings'}
-        </button>
-      </form>
+      <div className="panel settings-section" style={{ maxWidth: 640 }}>
+        <div className="panel-header">
+          <div>
+            <h2>Overdue detection</h2>
+            <p>Configure when a complaint is considered overdue.</p>
+          </div>
+        </div>
+        <form className="panel form-panel" style={{ border: 0, boxShadow: 'none' }} onSubmit={save}>
+          <label>
+            Overdue threshold (days)
+            <input
+              type="number"
+              min={1}
+              max={365}
+              step={1}
+              value={value}
+              onChange={(e) => setDays(e.target.value === '' ? undefined : Number(e.target.value))}
+            />
+            <span className="field-hint">
+              A complaint is overdue when it remains unresolved beyond this many days. Choose a value from 1 to 365.
+              Changes apply immediately to complaint listings, filtering, sorting, and the dashboard.
+            </span>
+          </label>
+          {q.error && <p className="form-error">{errorMessage(q.error)}</p>}
+          {error && <p className="form-error">{error}</p>}
+          <button className="primary" type="submit" disabled={m.isPending}>
+            {m.isPending ? 'Saving…' : 'Save settings'}
+          </button>
+        </form>
+      </div>
     </Shell>
   )
 }

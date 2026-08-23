@@ -11,7 +11,7 @@ import { ErrorState, LoadingState } from '@/components/shared/states'
 const STATUS_META = [
   { key: 'OPEN', label: 'Open', color: '#e0b000' },
   { key: 'IN_PROGRESS', label: 'In progress', color: '#d4d800' },
-  { key: 'RESOLVED', label: 'Resolved', color: '#8ea000' },
+  { key: 'RESOLVED', label: 'Resolved', color: '#7e9a00' },
 ] as const
 
 export default function DashboardPage() {
@@ -92,37 +92,72 @@ function Metric({
   )
 }
 
+function Donut({ segments }: { segments: { value: number; color: string }[] }) {
+  const total = segments.reduce((s, x) => s + x.value, 0)
+  const r = 40
+  const c = 2 * Math.PI * r
+  let offset = 0
+  return (
+    <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+      <circle cx="56" cy="56" r={r} fill="none" stroke="#1d1d1d" strokeWidth="12" />
+      {total > 0 &&
+        segments
+          .filter((s) => s.value > 0)
+          .map((s, i) => {
+            const len = (s.value / total) * c
+            const el = (
+              <circle
+                key={i}
+                cx="56"
+                cy="56"
+                r={r}
+                fill="none"
+                stroke={s.color}
+                strokeWidth="12"
+                strokeDasharray={`${len} ${c - len}`}
+                strokeDashoffset={-offset}
+                transform="rotate(-90 56 56)"
+              />
+            )
+            offset += len
+            return el
+          })}
+    </svg>
+  )
+}
+
 function StatusBreakdown({ data, thresholdDays }: { data: DashboardSummary; thresholdDays?: number }) {
-  const total = Math.max(1, data.total_complaints)
   const sum = data.by_status.OPEN + data.by_status.IN_PROGRESS + data.by_status.RESOLVED
   return (
-    <div className="status-breakdown">
-      <div className="stacked-bar">
-        {STATUS_META.map((s) => (
-          <span
-            key={s.key}
-            style={{ width: `${(data.by_status[s.key] / sum) * 100}%`, background: s.color }}
-          />
-        ))}
+    <div className="status-block">
+      <div className="donut-wrap">
+        <Donut
+          segments={STATUS_META.map((s) => ({ value: data.by_status[s.key], color: s.color }))}
+        />
+        <div className="donut-center">
+          <strong>{sum}</strong>
+          <span>complaints</span>
+        </div>
       </div>
-      <div className="legend">
-        {STATUS_META.map((s) => (
-          <div className="legend-row" key={s.key}>
-            <i style={{ background: s.color }} />
-            <span>{s.label}</span>
-            <b>{data.by_status[s.key]}</b>
-          </div>
-        ))}
+      <div className="status-legend">
+        {STATUS_META.map((s) => {
+          const count = data.by_status[s.key]
+          const pct = sum ? Math.round((count / sum) * 100) : 0
+          return (
+            <div className="legend-row" key={s.key}>
+              <i style={{ background: s.color }} />
+              <span>{s.label}</span>
+              <b>{count}</b>
+              <span className="pct">{pct}%</span>
+            </div>
+          )
+        })}
+        {thresholdDays && (
+          <p className="meta" style={{ marginTop: 8 }}>
+            Overdue = unresolved beyond {thresholdDays} day{thresholdDays === 1 ? '' : 's'}
+          </p>
+        )}
       </div>
-      <div className="breakdown-total">
-        <span>Total</span>
-        <b>{data.total_complaints}</b>
-      </div>
-      {thresholdDays && (
-        <p className="muted" style={{ fontSize: 10, margin: '10px 22px 16px' }}>
-          Overdue = unresolved beyond {thresholdDays} day{thresholdDays === 1 ? '' : 's'}.
-        </p>
-      )}
     </div>
   )
 }
@@ -132,20 +167,21 @@ function CategoryBreakdown({ data }: { data: DashboardSummary }) {
     return <p className="loading-state">No complaint data yet.</p>
   }
   return (
-    <div className="bars">
-      {data.by_category.map((c) => (
-        <div className="bar-row" key={c.category_id}>
-          <div>
-            <span>{c.category_name}</span>
-            <b>{c.count}</b>
+    <div className="cat-list">
+      {data.by_category.map((c) => {
+        const pct = data.total_complaints ? Math.round((c.count / data.total_complaints) * 100) : 0
+        return (
+          <div key={c.category_id}>
+            <div className="cat-row-head">
+              <span>{c.category_name}</span>
+              <b>{c.count}</b>
+            </div>
+            <div className="cat-track">
+              <i style={{ width: `${pct}%` }} />
+            </div>
           </div>
-          <div className="bar">
-            <i
-              style={{ width: `${data.total_complaints ? (c.count / data.total_complaints) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

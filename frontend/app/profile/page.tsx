@@ -41,24 +41,50 @@ export default function ProfilePage() {
           <p className="subheading">Account details. Only your name can be edited.</p>
         </div>
       </div>
-      <form className="panel form-panel" onSubmit={save}>
-        <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={120} />
-        </label>
-        <label>
-          Email <small>(read-only)</small>
-          <input value={user?.email ?? ''} disabled className="profile-email" />
-        </label>
-        <label>
-          Role <small>(read-only)</small>
-          <input value={user?.role ?? ''} disabled className="profile-role" />
-        </label>
-        {error && <p className="form-error">{error}</p>}
-        <button className="primary" type="submit" disabled={m.isPending}>
-          {m.isPending ? 'Saving…' : 'Save changes'}
-        </button>
-      </form>
+      <div className="panel" style={{ maxWidth: 640 }}>
+        <div className="panel-header">
+          <div>
+            <h2>Account information</h2>
+            <p>Identity details managed by the residency system.</p>
+          </div>
+        </div>
+        <form className="panel form-panel" style={{ border: 0, boxShadow: 'none' }} onSubmit={save}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 6 }}>
+            <div className="avatar" style={{ width: 44, height: 44, fontSize: 14 }}>
+              {user?.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <div style={{ color: '#e8e8e8', fontWeight: 600, fontSize: 13 }}>{user?.name}</div>
+              <div className="meta">{user?.role}</div>
+            </div>
+          </div>
+
+          <label>
+            Name
+            <input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={120} />
+          </label>
+
+          <div className="info-grid" style={{ gridTemplateColumns: '1fr', marginTop: 4, paddingTop: 14 }}>
+            <div className="info-item">
+              <span className="k">Email</span>
+              <span className="v">{user?.email ?? ''}</span>
+            </div>
+            <div className="info-item">
+              <span className="k">Role</span>
+              <span className="v">{user?.role ?? ''}</span>
+            </div>
+            <div className="info-item">
+              <span className="k">Member since</span>
+              <span className="v">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}</span>
+            </div>
+          </div>
+
+          {error && <p className="form-error">{error}</p>}
+          <button className="primary" type="submit" disabled={m.isPending} style={{ justifySelf: 'start' }}>
+            {m.isPending ? 'Saving…' : 'Save changes'}
+          </button>
+        </form>
+      </div>
     </Shell>
   )
 }

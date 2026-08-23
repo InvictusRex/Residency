@@ -1,5 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
+import { Folder, Timer } from 'lucide-react'
 import type { Complaint } from '@/lib/types'
 import { PriorityBadge, StatusBadge, formatDate } from '@/components/ui/badge'
 import { TableStatusActions } from './table-status-actions'
@@ -49,16 +50,24 @@ export function ComplaintTable({
                 style={{ cursor: 'pointer' }}
               >
                 <td>
-                  <div className="complaint-cell">
-                    <span className="complaint-id">{c.id}</span>
-                    <strong>{c.description.length > 72 ? `${c.description.slice(0, 72)}…` : c.description}</strong>
-                    <small>
-                      {c.category.name}
-                      {overdue && <span className="overdue">Overdue</span>}
-                    </small>
-                  </div>
+                  <span className="complaint-id mono">{c.id.slice(0, 8)}</span>
+                  <span className="complaint-title">{c.description}</span>
+                  <span className="chip">
+                    <Folder size={12} />
+                    {c.category.name}
+                    {overdue && (
+                      <span className="overdue-tag">
+                        <Timer size={11} /> Overdue
+                      </span>
+                    )}
+                  </span>
                 </td>
-                {showResident && <td className="resident">{c.resident.name}</td>}
+                {showResident && (
+                  <td className="resident-cell">
+                    <span>{c.resident.name}</span>
+                    <small>{c.resident.email}</small>
+                  </td>
+                )}
                 <td>
                   <StatusBadge value={c.status} />
                 </td>

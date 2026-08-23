@@ -137,7 +137,7 @@ export default function ComplaintDetailPage() {
           ) : h.data?.items.length ? (
             <ul className="timeline">
               {[...h.data.items].reverse().map((item, i) => (
-                <li key={item.id} className="timeline-item">
+                <li key={item.id} className={`timeline-item${i === 0 ? ' latest' : ''}`}>
                   <span className="timeline-dot" />
                   <div>
                     <StatusBadge value={item.status} />

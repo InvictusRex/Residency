@@ -38,23 +38,39 @@ export default function NoticesPage() {
         ) : q.data?.items.length ? (
           <>
             <div className="notice-list">
-              {q.data.items.map((n) => (
-                <article className={n.is_important ? 'notice important' : 'notice'} key={n.id}>
-                  <div className="notice-icon">
-                    {n.is_important ? <Megaphone size={16} /> : <Bell size={16} />}
+              {q.data.items.map((n, i) => {
+                const firstRegular =
+                  !n.is_important && q.data.items.slice(0, i).every((x) => x.is_important)
+                return (
+                  <div key={n.id}>
+                    {i === 0 && n.is_important && (
+                      <p className="section-label" style={{ margin: '4px 0 4px' }}>
+                        Pinned
+                      </p>
+                    )}
+                    {firstRegular && (
+                      <p className="section-label" style={{ margin: '18px 0 4px' }}>
+                        Recent notices
+                      </p>
+                    )}
+                    <article className={n.is_important ? 'notice important' : 'notice'}>
+                      <div className="notice-icon">
+                        {n.is_important ? <Megaphone size={16} /> : <Bell size={16} />}
+                      </div>
+                      <div>
+                        <div className="notice-title">
+                          <strong>{n.title}</strong>
+                          {n.is_important && <span>IMPORTANT</span>}
+                        </div>
+                        <p>{n.content}</p>
+                        <small>
+                          {formatDate(n.created_at)} · {n.created_by.name}
+                        </small>
+                      </div>
+                    </article>
                   </div>
-                  <div>
-                    <div className="notice-title">
-                      <strong>{n.title}</strong>
-                      {n.is_important && <span>IMPORTANT</span>}
-                    </div>
-                    <p>{n.content}</p>
-                    <small>
-                      {formatDate(n.created_at)} · {n.created_by.name}
-                    </small>
-                  </div>
-                </article>
-              ))}
+                )
+              })}
             </div>
             <Pagination page={page} pageSize={PAGE_SIZE} total={q.data.total} onChange={setPage} />
           </>
