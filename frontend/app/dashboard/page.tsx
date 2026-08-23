@@ -8,9 +8,7 @@ import { Shell } from '@/components/shell'
 import { ErrorState, LoadingState } from '@/components/shared/states'
 import { Icon } from '@/components/ui/icon'
 import { formatDate } from '@/components/ui/badge'
-import AnimatedContent from '@/components/animations/AnimatedContent'
 import AnimatedNumber from '@/components/animations/AnimatedNumber'
-import BlurText from '@/components/animations/BlurText'
 
 const STATUS_META = [
   { key: 'OPEN', label: 'Open', color: '#84cc16' },
@@ -29,31 +27,29 @@ export default function DashboardPage() {
 
   return (
     <Shell title="Dashboard">
-      <AnimatedContent distance={24} duration={0.6} threshold={0.05}>
-        <div className="page-heading">
-          <div>
-            <p className="eyebrow">Live Data Feed // Residency Status</p>
-            <BlurText text="OPERATIONS HUB" className="rb-title" />
-            <p className="subheading">Operational metrics from the Residency backend.</p>
-          </div>
+      <div className="page-heading dash-heading">
+        <div>
+          <p className="eyebrow">LIVE DATA FEED // RESIDENCY STATUS</p>
+          <h1 className="dash-title">OPERATIONS HUB</h1>
+          <p className="subheading">Operational metrics from the Residency backend.</p>
         </div>
-      </AnimatedContent>
+      </div>
+
       {q.isPending ? (
         <LoadingState />
       ) : q.error ? (
         <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
       ) : (
         <>
-          <div className="metric-grid">
+          <div className="metric-grid dash-metrics">
             <Metric label="Total Complaints" value={q.data.total_complaints} icon="receipt_long" />
             <Metric label="Open" value={q.data.by_status.OPEN} accent icon="schedule" />
-            <Metric label="In Progress" value={q.data.by_status.IN_PROGRESS} icon="construction" />
             <Metric label="Resolved" value={q.data.by_status.RESOLVED} icon="check_circle" />
             <Metric label="Overdue" value={q.data.overdue_count} warn icon="warning" />
           </div>
 
-          <div className="dashboard-grid">
-            <section className="panel">
+          <div className="dash-panels">
+            <section className="panel dash-panel">
               <div className="panel-header">
                 <div>
                   <h2>Status Distribution</h2>
@@ -63,14 +59,24 @@ export default function DashboardPage() {
               <StatusBreakdown data={q.data} thresholdDays={settings.data?.overdue_threshold_days} />
             </section>
 
-            <section className="panel">
+            <section className="panel dash-panel">
+              <div className="panel-header">
+                <div>
+                  <h2>By Category</h2>
+                  <p>Distribution returned by the API</p>
+                </div>
+              </div>
+              <CategoryBreakdown data={q.data} />
+            </section>
+
+            <section className="panel dash-panel">
               <div className="panel-header">
                 <div>
                   <h2>System Feed</h2>
                   <p>Latest complaints</p>
                 </div>
-                <span className="chip-btn active" style={{ border: 'none', padding: 0 }}>
-                  Live
+                <span className="live">
+                  <i /> Live
                 </span>
               </div>
               {feedQ.isPending ? (
@@ -85,7 +91,9 @@ export default function DashboardPage() {
                         <span className="feed-id">#{c.id.slice(0, 6).toUpperCase()}</span>
                       </div>
                       <div className="feed-title">{c.description}</div>
-                      <span className="feed-tag">{c.category.name}</span>
+                      <span className="feed-tag">
+                        {c.category.name} · {c.status.replace('_', ' ')}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -94,16 +102,6 @@ export default function DashboardPage() {
               )}
             </section>
           </div>
-
-          <section className="panel" style={{ marginTop: 16 }}>
-            <div className="panel-header">
-              <div>
-                <h2>By Category</h2>
-                <p>Distribution returned by the API</p>
-              </div>
-            </div>
-            <CategoryBreakdown data={q.data} />
-          </section>
         </>
       )}
     </Shell>
@@ -124,27 +122,27 @@ function Metric({
   icon: string
 }) {
   return (
-    <div className={`metric has-icon${accent ? ' accent' : ''}`}>
-      <div className="metric-icon">
-        <Icon name={icon} size={26} fill={accent || warn} />
-      </div>
-      <span>{label}</span>
-      <strong style={warn ? { color: 'var(--lime-2)' } : undefined}>
+    <div className={`metric${accent ? ' accent' : ''}${warn ? ' warn' : ''}`}>
+      <span className="metric-label">{label}</span>
+      <strong className="metric-value">
         <AnimatedNumber value={value} />
       </strong>
-      <small>Backend response</small>
+      <span className="metric-note">Backend response</span>
+      <div className="metric-icon">
+        <Icon name={icon} size={22} fill={accent || warn} />
+      </div>
     </div>
   )
 }
 
 function Donut({ segments }: { segments: { value: number; color: string }[] }) {
   const total = segments.reduce((s, x) => s + x.value, 0)
-  const r = 40
+  const r = 34
   const c = 2 * Math.PI * r
   let offset = 0
   return (
-    <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
-      <circle cx="56" cy="56" r={r} fill="none" stroke="#262626" strokeWidth="12" />
+    <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
+      <circle cx="48" cy="48" r={r} fill="none" stroke="#262626" strokeWidth="11" />
       {total > 0 &&
         segments
           .filter((s) => s.value > 0)
@@ -153,15 +151,15 @@ function Donut({ segments }: { segments: { value: number; color: string }[] }) {
             const el = (
               <circle
                 key={i}
-                cx="56"
-                cy="56"
+                cx="48"
+                cy="48"
                 r={r}
                 fill="none"
                 stroke={s.color}
-                strokeWidth="12"
+                strokeWidth="11"
                 strokeDasharray={`${len} ${c - len}`}
                 strokeDashoffset={-offset}
-                transform="rotate(-90 56 56)"
+                transform="rotate(-90 48 48)"
               />
             )
             offset += len
@@ -179,7 +177,7 @@ function StatusBreakdown({ data, thresholdDays }: { data: DashboardSummary; thre
         <Donut segments={STATUS_META.map((s) => ({ value: data.by_status[s.key], color: s.color }))} />
         <div className="donut-center">
           <strong>{sum}</strong>
-          <span>complaints</span>
+          <span>Total</span>
         </div>
       </div>
       <div className="status-legend">
@@ -213,13 +211,13 @@ function CategoryBreakdown({ data }: { data: DashboardSummary }) {
   return (
     <div className="bar-chart">
       <div className="bar-grid" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <div key={i} className="bar-grid-line" />
         ))}
       </div>
       <div className="bar-columns">
         {data.by_category.map((c) => {
-          const height = Math.max(4, Math.round((c.count / max) * 100))
+          const height = Math.max(5, Math.round((c.count / max) * 100))
           return (
             <div className="bar-col" key={c.category_id}>
               <span className="bar-count">{c.count}</span>

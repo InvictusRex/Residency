@@ -14,3 +14,7 @@ node_modules
 .next/
 .DS_Store# TypeScript build cache
 *.tsbuildinfo
+
+# Stitch design reference (zip + extracted)
+stitch_residency_management_system.zip
+stitch_residency_management_system/
