@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user, require_admin, require_resident
+from app.core.exceptions import FileUploadError
 from app.core.enums import ComplaintPriority, ComplaintStatus
 from app.db.session import get_db
 from app.models.user import User
@@ -35,10 +36,10 @@ async def create_complaint(
 ) -> ComplaintOut:
     uploaded: tuple[bytes, str, str] | None = None
     if photo is not None:
-        max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024 + 1
-        data = await photo.read(max_bytes)
-        if len(data) > settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024:
-            data = data[:-1]
+        max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+        data = await photo.read(max_bytes + 1)
+        if len(data) > max_bytes:
+            raise FileUploadError("file_too_large")
         content_type = photo.content_type or ""
         filename = photo.filename or ""
         uploaded = (data, filename, content_type)
