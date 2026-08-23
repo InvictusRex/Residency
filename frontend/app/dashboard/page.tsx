@@ -33,7 +33,7 @@ export default function DashboardPage() {
         <div className="page-heading">
           <div>
             <p className="eyebrow">Live Data Feed // Residency Status</p>
-            <BlurText text="Operations Hub" className="rb-title" />
+            <BlurText text="OPERATIONS HUB" className="rb-title" />
             <p className="subheading">Operational metrics from the Residency backend.</p>
           </div>
         </div>
@@ -80,11 +80,12 @@ export default function DashboardPage() {
                   {feedQ.data.items.map((c) => (
                     <div key={c.id} className={`feed-item${c.status === 'RESOLVED' ? ' resolved' : ''}`}>
                       <span className="feed-dot" />
-                      <div className="feed-time">{formatDate(c.created_at)}</div>
-                      <div className="feed-title">{c.description}</div>
-                      <div className="feed-cat">
-                        {c.category.name} · {c.status.replace('_', ' ')}
+                      <div className="feed-meta">
+                        <span className="feed-time">{formatDate(c.created_at)}</span>
+                        <span className="feed-id">#{c.id.slice(0, 6).toUpperCase()}</span>
                       </div>
+                      <div className="feed-title">{c.description}</div>
+                      <span className="feed-tag">{c.category.name}</span>
                     </div>
                   ))}
                 </div>
@@ -208,22 +209,30 @@ function CategoryBreakdown({ data }: { data: DashboardSummary }) {
   if (!data.by_category.length) {
     return <p className="loading-state">No complaint data yet.</p>
   }
+  const max = Math.max(...data.by_category.map((c) => c.count), 1)
   return (
-    <div className="cat-list">
-      {data.by_category.map((c) => {
-        const pct = data.total_complaints ? Math.round((c.count / data.total_complaints) * 100) : 0
-        return (
-          <div key={c.category_id}>
-            <div className="cat-row-head">
-              <span>{c.category_name}</span>
-              <b>{c.count}</b>
+    <div className="bar-chart">
+      <div className="bar-grid" aria-hidden="true">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="bar-grid-line" />
+        ))}
+      </div>
+      <div className="bar-columns">
+        {data.by_category.map((c) => {
+          const height = Math.max(4, Math.round((c.count / max) * 100))
+          return (
+            <div className="bar-col" key={c.category_id}>
+              <span className="bar-count">{c.count}</span>
+              <div className="bar-col-track">
+                <i style={{ height: `${height}%` }} />
+              </div>
+              <span className="bar-label" title={c.category_name}>
+                {c.category_name}
+              </span>
             </div>
-            <div className="cat-track">
-              <i style={{ width: `${pct}%` }} />
-            </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }

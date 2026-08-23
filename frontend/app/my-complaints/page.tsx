@@ -15,13 +15,6 @@ import BlurText from '@/components/animations/BlurText'
 
 const PAGE_SIZE = 12
 
-const FILTERS: { key: '' | Status; label: string }[] = [
-  { key: '', label: 'All Active' },
-  { key: 'OPEN', label: 'Submitted' },
-  { key: 'IN_PROGRESS', label: 'In Progress' },
-  { key: 'RESOLVED', label: 'Resolved' },
-]
-
 function useCount(token: string | null, status: Status | undefined) {
   return useQuery({
     queryKey: queryKeys.complaints(`count${status ?? 'all'}`),
@@ -34,7 +27,9 @@ export default function MyComplaintsPage() {
   const { token } = useAuth()
   const router = useRouter()
   const [page, setPage] = useState(1)
-  const [filter, setFilter] = useState<'' | Status>('')
+  const [categoryId, setCategoryId] = useState('')
+
+  const categories = useQuery({ queryKey: queryKeys.categories, queryFn: () => api.categories(token!) })
 
   const totalQ = useCount(token, undefined)
   const openQ = useCount(token, 'OPEN')
@@ -44,7 +39,7 @@ export default function MyComplaintsPage() {
   const qs = buildComplaintQuery({
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
-    status: filter || undefined,
+    category_id: categoryId || undefined,
     sort: 'newest',
   })
   const q = useQuery({
@@ -73,17 +68,27 @@ export default function MyComplaintsPage() {
       </div>
 
       <div className="chip-row" role="tablist" aria-label="Filter complaints">
-        {FILTERS.map((f) => (
+        <button
+          className={`chip-btn${categoryId === '' ? ' active' : ''}`}
+          onClick={() => {
+            setCategoryId('')
+            setPage(1)
+          }}
+          aria-pressed={categoryId === ''}
+        >
+          All Active
+        </button>
+        {categories.data?.filter((c) => c.is_active).map((c) => (
           <button
-            key={f.key}
-            className={`chip-btn${filter === f.key ? ' active' : ''}`}
+            key={c.id}
+            className={`chip-btn${categoryId === c.id ? ' active' : ''}`}
             onClick={() => {
-              setFilter(f.key)
+              setCategoryId(c.id)
               setPage(1)
             }}
-            aria-pressed={filter === f.key}
+            aria-pressed={categoryId === c.id}
           >
-            {f.label}
+            {c.name.toUpperCase()}
           </button>
         ))}
       </div>
@@ -101,7 +106,7 @@ export default function MyComplaintsPage() {
         </>
       ) : (
         <EmptyState
-          title={filter === '' ? 'No complaints yet' : 'No complaints match'}
+          title={categoryId === '' ? 'No complaints yet' : 'No complaints match'}
           message="File a new complaint and it will appear here."
           action={
             <button className="primary" onClick={() => router.push('/my-complaints/new')}>

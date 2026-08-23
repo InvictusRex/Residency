@@ -10,9 +10,8 @@ type NavItem = { href: string; label: string; icon: string; admin?: boolean; res
 const adminNav: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'dashboard', admin: true },
   { href: '/complaints', label: 'Complaints', icon: 'report_problem', admin: true },
-  { href: '/notices', label: 'Notices', icon: 'campaign' },
+  { href: '/admin/notices', label: 'Notices', icon: 'campaign', admin: true },
   { href: '/admin/categories', label: 'Categories', icon: 'category', admin: true },
-  { href: '/admin/notices', label: 'Notice Mgmt', icon: 'campaign', admin: true },
   { href: '/admin/settings', label: 'Settings', icon: 'settings', admin: true },
   { href: '/profile', label: 'Profile', icon: 'account_circle' },
 ]

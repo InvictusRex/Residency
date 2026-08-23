@@ -393,7 +393,8 @@
     "stitch_neon_design": "done: full Neon Obsidian visual replication from Stitch zip (11 pages restyled, role-aware shell: admin sidebar / resident topnav, Material Symbols icons, Space Grotesk+JetBrains Mono+Inter fonts, functional dark/light theme, brutalist hard-shadow hovers, scanlines); register/resident-notices/resident-detail filled in matching style; backend untouched except one test-only UTC timezone fix (date.today -> now(timezone.utc).date); Material Symbols loaded via layout link (CSS @import conflicts with Tailwind expansion)",
     "reactbits_animations": "done: real reactbits.dev components added (BlurText via motion, AnimatedContent via gsap, AnimatedNumber count-up); applied to dashboard titles/metrics, complaints, my-complaints, notices, complaint detail; admin sidebar now auto-collapses on smaller screens (sticky in-flow on desktop, fixed drawer <850px)",
     "fix_icons_donut_progress": "done: Material Symbols self-hosted woff2 (no CDN dependency, no raw icon text); donut center re-aligned via sized wrap + flex overlay; new POST /api/v1/complaints/{id}/notes appends immutable progress entries to history (admin only, rejected when RESOLVED) + frontend Progress Update composer on detail page",
-    "auth_persistence_login_fidelity": "done: token/user persisted in localStorage (no more logout on reload/new tab); login page matches Stitch HTML: self-hosted building image + dark overlay + Sector 7G copy + corner box, mail/lock icons in inputs, password visibility toggle, arrow CTA, theme switcher top-left"
+    "auth_persistence_login_fidelity": "done: token/user persisted in localStorage (no more logout on reload/new tab); login page matches Stitch HTML: self-hosted building image + dark overlay + Sector 7G copy + corner box, mail/lock icons in inputs, password visibility toggle, arrow CTA, theme switcher top-left",
+    "page_design_audit": "in_progress: page-by-page alignment vs Stitch HTML (dashboard vertical bar chart + OPERATIONS HUB + feed items, resident category chips, card description clamp, settings accent+calendar icon, admin nav Notices->/admin/notices)"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",
@@ -423,7 +424,12 @@
     "donut: svg absolute + center overlay flexbox, guarantees centered number",
     "progress updates: backend POST /complaints/{id}/notes (schema NoteCreateRequest, service add_progress_note, route, 5 tests); frontend api.addNote + composer card on admin detail view",
     "session persistence: localStorage for residency.token/user (was sessionStorage, lost on new tab); theme pref also localStorage",
-    "login fidelity: self-hosted login-art.jpg from Stitch HTML, input icons, visibility toggle, theme switcher, overlay text + corner deco"
+    "login fidelity: self-hosted login-art.jpg from Stitch HTML, input icons, visibility toggle, theme switcher, overlay text + corner deco",
+    "dashboard: OPERATIONS HUB uppercase; System Feed items now time+id+text+tag; By Category is a vertical bar chart with grid/hover counts",
+    "resident cards: 2-line clamped title, P1/P2/P3 priority tag, category+date footer",
+    "filter tabs on /my-complaints now real category chips (Stitch-style)",
+    "settings: top accent bar, calendar icon in input, Update Settings button",
+    "admin sidebar: Notices -> /admin/notices, removed separate Notice Mgmt item"
   ],
   "security_review": {
     "date": "2026-08-23",

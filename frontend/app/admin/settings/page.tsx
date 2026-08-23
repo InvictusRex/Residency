@@ -7,6 +7,7 @@ import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { LoadingState } from '@/components/shared/states'
 import { useToast } from '@/components/ui/toast'
+import { Icon } from '@/components/ui/icon'
 
 export default function AdminSettingsPage() {
   const { token } = useAuth()
@@ -51,7 +52,8 @@ export default function AdminSettingsPage() {
           <p className="subheading">Adjust global platform parameters and thresholds.</p>
         </div>
       </div>
-      <div className="panel settings-section" style={{ maxWidth: 640 }}>
+      <div className="panel settings-section" style={{ maxWidth: 640, position: 'relative', overflow: 'hidden' }}>
+        <div className="settings-accent" aria-hidden="true" />
         <div className="panel-header">
           <div>
             <h2>Overdue detection</h2>
@@ -60,24 +62,29 @@ export default function AdminSettingsPage() {
         </div>
         <form className="panel form-panel" style={{ border: 0, boxShadow: 'none' }} onSubmit={save}>
           <label>
-            Overdue threshold (days)
-            <input
-              type="number"
-              min={1}
-              max={365}
-              step={1}
-              value={value}
-              onChange={(e) => setDays(e.target.value === '' ? undefined : Number(e.target.value))}
-            />
+            <span className="field-label">Overdue Threshold (Days)</span>
+            <div className="settings-input-wrap">
+              <input
+                type="number"
+                min={1}
+                max={365}
+                step={1}
+                value={value}
+                onChange={(e) => setDays(e.target.value === '' ? undefined : Number(e.target.value))}
+              />
+              <span className="input-icon">
+                <Icon name="calendar_month" size={20} />
+              </span>
+            </div>
             <span className="field-hint">
-              A complaint is overdue when it remains unresolved beyond this many days. Choose a value from 1 to 365.
-              Changes apply immediately to complaint listings, filtering, sorting, and the dashboard.
+              A complaint is flagged as overdue in the dashboard when it remains unresolved beyond this many days.
+              Choose 1 to 365. Default is 3 days.
             </span>
           </label>
           {q.error && <p className="form-error">{errorMessage(q.error)}</p>}
           {error && <p className="form-error">{error}</p>}
           <button className="primary" type="submit" disabled={m.isPending}>
-            {m.isPending ? 'Saving…' : 'Save settings'}
+            {m.isPending ? 'Saving…' : 'Update Settings'}
           </button>
         </form>
       </div>
