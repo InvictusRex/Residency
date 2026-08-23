@@ -673,3 +673,21 @@ html.light .category-card { border-color: var(--border); }
 }
 .rb-title { font-family: var(--font-space); font-size: 30px; font-weight: 700; letter-spacing: -.6px; color: var(--text-hi); margin-top: 6px; line-height: 1.2; }
 @media (max-width: 850px) { .rb-title { font-size: 24px; } }
+
+.auth-art { background-image: url('/images/login-art.jpg'); background-size: cover; background-position: center; }
+.auth-art::before { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,.45); mix-blend-mode: multiply; }
+.auth-art-inner { position: relative; z-index: 1; margin-top: auto; }
+.auth-corner { position: absolute; top: 48px; right: 48px; width: 96px; height: 96px; border: 1px solid rgba(132,204,22,.3); z-index: 1; }
+.auth-corner::before { content: ""; position: absolute; top: 0; left: 0; width: 8px; height: 8px; background: var(--lime-2); }
+.auth-corner::after { content: ""; position: absolute; bottom: 0; right: 0; width: 8px; height: 8px; background: var(--yellow); }
+.auth-theme { position: fixed; top: 24px; left: 24px; z-index: 50; }
+
+.auth-input-wrap { position: relative; }
+.auth-input-wrap .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.auth-input-wrap .input-icon .material-symbols-outlined { font-size: 20px; }
+.auth-input-wrap input { padding-left: 44px; }
+.auth-input-wrap .input-action { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--text-muted); padding: 2px; }
+.auth-input-wrap .input-action:hover { color: var(--text); }
+.auth-input-wrap .input-action .material-symbols-outlined { font-size: 20px; }
+
+.auth-art { position: relative; }

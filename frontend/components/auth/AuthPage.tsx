@@ -3,8 +3,26 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api, errorMessage, isApiError } from '@/lib/api/client'
 import { useAuth } from '@/components/auth-provider'
+import { useTheme } from '@/components/theme-provider'
+import { Icon } from '@/components/ui/icon'
 
 const RATE_LIMIT_SECONDS = 60
+
+function AuthThemeSwitch() {
+  const { theme, toggle } = useTheme()
+  return (
+    <div className="theme-switch" role="group" aria-label="Theme">
+      <button className={`theme-segment${theme === 'dark' ? ' active' : ''}`} onClick={() => theme !== 'dark' && toggle()} aria-pressed={theme === 'dark'}>
+        <Icon name="dark_mode" size={16} />
+        Dark
+      </button>
+      <button className={`theme-segment${theme === 'light' ? ' active' : ''}`} onClick={() => theme !== 'light' && toggle()} aria-pressed={theme === 'light'}>
+        <Icon name="light_mode" size={16} />
+        Light
+      </button>
+    </div>
+  )
+}
 
 export function AuthPage({ register = false }: { register?: boolean }) {
   const { signIn } = useAuth()
@@ -12,6 +30,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [lockedSeconds, setLockedSeconds] = useState(0)
@@ -49,6 +68,9 @@ export function AuthPage({ register = false }: { register?: boolean }) {
 
   return (
     <main className="auth-page">
+      <div className="auth-theme">
+        <AuthThemeSwitch />
+      </div>
       <div className="auth-form-side">
         <div className="auth-brand">RESIDENCY_</div>
         <p className="auth-sub">
@@ -65,20 +87,33 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           )}
           <label>
             <span>Identifier [Email]</span>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="operator@residency.sys" />
+            <div className="auth-input-wrap">
+              <span className="input-icon">
+                <Icon name="mail" size={20} />
+              </span>
+              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="operator@residency.sys" />
+            </div>
           </label>
           <label>
             <span>Access Key [Password]</span>
-            <input
-              required
-              minLength={8}
-              maxLength={128}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={register ? 'new-password' : 'current-password'}
-              placeholder="••••••••"
-            />
+            <div className="auth-input-wrap">
+              <span className="input-icon">
+                <Icon name="lock" size={20} />
+              </span>
+              <input
+                required
+                minLength={8}
+                maxLength={128}
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={register ? 'new-password' : 'current-password'}
+                placeholder="••••••••"
+              />
+              <button type="button" className="input-action" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                <Icon name={showPassword ? 'visibility_off' : 'visibility'} size={20} />
+              </button>
+            </div>
           </label>
           {register && (
             <p className="muted" style={{ margin: 0 }}>
@@ -92,7 +127,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           )}
           <button className="primary full" type="submit" disabled={busy || locked}>
             {locked ? `Try again in ${lockedSeconds}s` : busy ? 'Connecting…' : register ? 'Create Account' : 'Authenticate'}
-            {!locked && !busy && <span style={{ marginLeft: 4 }}>→</span>}
+            {!locked && !busy && <Icon name="arrow_forward" size={18} />}
           </button>
         </form>
         <p className="auth-switch">
@@ -106,8 +141,11 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         </div>
       </div>
       <div className="auth-art">
-        <div className="art-tag">SECTOR 7G / HIGH DENSITY</div>
-        <div className="art-line">Residency control array initialized. Manage maintenance, notices, and community operations from one console.</div>
+        <div className="auth-corner" aria-hidden="true" />
+        <div className="auth-art-inner">
+          <div className="art-tag">Sector 7G / High Density</div>
+          <div className="art-line">Residency Control Array initialized. Manage maintenance, notices, and community operations from one console.</div>
+        </div>
       </div>
     </main>
   )

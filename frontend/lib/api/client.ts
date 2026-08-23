@@ -24,7 +24,7 @@ export type { Status, Priority, Complaint, ApiError, User, Notice, Page, Setting
 const baseUrl = () => `${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000'}/api/v1`
 
 export const getToken = () =>
-  typeof window === 'undefined' ? undefined : (sessionStorage.getItem('residency.token') ?? undefined)
+  typeof window === 'undefined' ? undefined : (localStorage.getItem('residency.token') ?? undefined)
 
 async function parseError(response: Response): Promise<ApiError> {
   let body: { detail?: string; code?: string; errors?: { loc?: Array<string | number>; msg?: string }[] } = {}
@@ -38,8 +38,8 @@ async function parseError(response: Response): Promise<ApiError> {
     return acc
   }, {})
   if (response.status === 401 && typeof window !== 'undefined') {
-    sessionStorage.removeItem('residency.token')
-    sessionStorage.removeItem('residency.user')
+    localStorage.removeItem('residency.token')
+    localStorage.removeItem('residency.user')
     const path = window.location.pathname
     if (path !== '/login' && path !== '/register') window.location.assign('/login')
   }

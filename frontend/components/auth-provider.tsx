@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const saved = sessionStorage.getItem(TOKEN_KEY)
+    const saved = localStorage.getItem(TOKEN_KEY)
     if (!saved) {
       setLoading(false)
       return
@@ -32,26 +32,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .me(saved)
       .then((u) => {
         setUser(u)
-        sessionStorage.setItem(USER_KEY, JSON.stringify(u))
+        localStorage.setItem(USER_KEY, JSON.stringify(u))
       })
       .catch(() => {
-        sessionStorage.removeItem(TOKEN_KEY)
-        sessionStorage.removeItem(USER_KEY)
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(USER_KEY)
         setToken(null)
       })
       .finally(() => setLoading(false))
   }, [])
 
   const signIn = useCallback((nextToken: string, nextUser: User) => {
-    sessionStorage.setItem(TOKEN_KEY, nextToken)
-    sessionStorage.setItem(USER_KEY, JSON.stringify(nextUser))
+    localStorage.setItem(TOKEN_KEY, nextToken)
+    localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
     setToken(nextToken)
     setUser(nextUser)
   }, [])
 
   const signOut = useCallback(() => {
-    sessionStorage.removeItem(TOKEN_KEY)
-    sessionStorage.removeItem(USER_KEY)
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
     setToken(null)
     setUser(null)
   }, [])

@@ -18,14 +18,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme])
 
   useEffect(() => {
-    const saved = sessionStorage.getItem(THEME_KEY) as Theme | null
+    const saved = localStorage.getItem(THEME_KEY) as Theme | null
     if (saved === 'light') setTheme('light')
   }, [])
 
   const toggle = useCallback(() => {
     setTheme((t) => {
       const next: Theme = t === 'dark' ? 'light' : 'dark'
-      sessionStorage.setItem(THEME_KEY, next)
+      localStorage.setItem(THEME_KEY, next)
       return next
     })
   }, [])
