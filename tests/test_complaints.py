@@ -103,10 +103,12 @@ class TestPhotoUpload:
         assert resp.status_code == 201, resp.text
         photo_url = resp.json()["photo_url"]
         assert photo_url is not None
-        assert photo_url.startswith("/uploads/complaints/")
-        served = client.get(photo_url)
+        assert photo_url == f"/api/v1/complaints/{resp.json()['id']}/photo"
+        served = client.get(photo_url, headers=resident_headers)
         assert served.status_code == 200
         assert served.content == _minimal_png_bytes()
+        anonymous = client.get(photo_url)
+        assert anonymous.status_code == 401
 
     def test_invalid_file_type_rejected(self, client, resident_headers, category_factory):
         category = category_factory(name="Plumbing")
