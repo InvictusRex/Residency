@@ -773,3 +773,5 @@ html.light .category-card { border-color: var(--border); }
 .stat-card.yellow .stat-icon { color: var(--yellow); opacity: 1; }
 .stat-card.lime .stat-icon { color: var(--lime-2); opacity: 1; }
 .stat-card .stat-icon .material-symbols-outlined { font-size: 22px; }
+
+.auth-card form button[type='submit'] { margin-top: 8px; }
