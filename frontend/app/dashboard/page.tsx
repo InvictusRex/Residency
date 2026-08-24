@@ -40,69 +40,71 @@ export default function DashboardPage() {
       ) : q.error ? (
         <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
       ) : (
-        <>
-          <div className="metric-grid dash-metrics">
-            <Metric label="Total Complaints" value={q.data.total_complaints} icon="receipt_long" />
-            <Metric label="Open" value={q.data.by_status.OPEN} accent icon="schedule" />
-            <Metric label="Resolved" value={q.data.by_status.RESOLVED} icon="check_circle" />
-            <Metric label="Overdue" value={q.data.overdue_count} warn icon="warning" />
+        <div className="dash-layout">
+          <div className="dash-main">
+            <div className="metric-grid dash-metrics">
+              <Metric label="Total Complaints" value={q.data.total_complaints} icon="receipt_long" />
+              <Metric label="Open" value={q.data.by_status.OPEN} accent icon="schedule" />
+              <Metric label="Resolved" value={q.data.by_status.RESOLVED} icon="check_circle" />
+              <Metric label="Overdue" value={q.data.overdue_count} warn icon="warning" />
+            </div>
+
+            <div className="dash-panels">
+              <section className="panel dash-panel">
+                <div className="panel-header">
+                  <div>
+                    <h2>Status Distribution</h2>
+                    <p>Breakdown of all complaints</p>
+                  </div>
+                </div>
+                <StatusBreakdown data={q.data} thresholdDays={settings.data?.overdue_threshold_days} />
+              </section>
+
+              <section className="panel dash-panel">
+                <div className="panel-header">
+                  <div>
+                    <h2>By Category</h2>
+                    <p>Distribution returned by the API</p>
+                  </div>
+                </div>
+                <CategoryBreakdown data={q.data} />
+              </section>
+            </div>
           </div>
 
-          <div className="dash-panels">
-            <section className="panel dash-panel">
-              <div className="panel-header">
-                <div>
-                  <h2>Status Distribution</h2>
-                  <p>Breakdown of all complaints</p>
-                </div>
+          <section className="panel dash-feed">
+            <div className="panel-header">
+              <div>
+                <h2>System Feed</h2>
+                <p>Latest complaints</p>
               </div>
-              <StatusBreakdown data={q.data} thresholdDays={settings.data?.overdue_threshold_days} />
-            </section>
-
-            <section className="panel dash-panel">
-              <div className="panel-header">
-                <div>
-                  <h2>By Category</h2>
-                  <p>Distribution returned by the API</p>
-                </div>
-              </div>
-              <CategoryBreakdown data={q.data} />
-            </section>
-
-            <section className="panel dash-panel">
-              <div className="panel-header">
-                <div>
-                  <h2>System Feed</h2>
-                  <p>Latest complaints</p>
-                </div>
-                <span className="live">
-                  <i /> Live
-                </span>
-              </div>
-              {feedQ.isPending ? (
-                <LoadingState label="Loading feed…" />
-              ) : feedQ.data?.items.length ? (
-                <div className="feed">
-                  {feedQ.data.items.map((c) => (
-                    <div key={c.id} className={`feed-item${c.status === 'RESOLVED' ? ' resolved' : ''}`}>
-                      <span className="feed-dot" />
-                      <div className="feed-meta">
-                        <span className="feed-time">{formatDate(c.created_at)}</span>
-                        <span className="feed-id">#{c.id.slice(0, 6).toUpperCase()}</span>
-                      </div>
-                      <div className="feed-title">{c.description}</div>
-                      <span className="feed-tag">
-                        {c.category.name} · {c.status.replace('_', ' ')}
-                      </span>
+              <span className="live">
+                <i /> Live
+              </span>
+            </div>
+            {feedQ.isPending ? (
+              <LoadingState label="Loading feed…" />
+            ) : feedQ.data?.items.length ? (
+              <div className="feed">
+                {feedQ.data.items.map((c) => (
+                  <div key={c.id} className={`feed-item${c.status === 'RESOLVED' ? ' resolved' : ''}`}>
+                    <span className="feed-dot" />
+                    <div className="feed-meta">
+                      <span className="feed-time">{formatDate(c.created_at)}</span>
+                      <span className="feed-id">#{c.id.slice(0, 6).toUpperCase()}</span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="loading-state">No complaints yet.</p>
-              )}
-            </section>
-          </div>
-        </>
+                    <div className="feed-title">{c.description}</div>
+                    <span className="feed-tag">
+                      {c.category.name} · {c.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="loading-state">No complaints yet.</p>
+            )}
+          </section>
+        </div>
       )}
     </Shell>
   )

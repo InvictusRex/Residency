@@ -267,7 +267,9 @@ html.light .page-heading h1 { color: var(--text-hi); }
 .card-title { color: var(--text-hi); }
 
 .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.dash-metrics { margin-bottom: 16px; }
+.dash-layout { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(280px, 0.8fr); grid-template-rows: auto auto; gap: 14px; }
+.dash-main { grid-column: 1; grid-row: 1 / span 2; display: grid; gap: 14px; min-width: 0; align-content: start; }
+.dash-metrics { margin-bottom: 0; }
 .metric { background: var(--surface); border: 1px solid var(--border); padding: 16px 18px; min-height: 118px; display: flex; flex-direction: column; justify-content: center; gap: 6px; position: relative; overflow: hidden; transition: border-color .2s ease; }
 .metric:hover { border-color: var(--yellow); }
 .metric-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-slate); }
@@ -284,7 +286,9 @@ html.light .page-heading h1 { color: var(--text-hi); }
 .page-heading .dash-title { font-family: var(--font-space); font-size: 30px; font-weight: 700; letter-spacing: -0.6px; color: var(--text-hi); text-transform: uppercase; margin: 6px 0 8px; line-height: 1.15; }
 .dash-heading .eyebrow { color: var(--yellow); letter-spacing: 2px; }
 
-.dash-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: stretch; }
+.dash-panels { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; align-items: stretch; }
+.dash-feed { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; min-width: 0; }
+.dash-feed .feed { max-height: none; }
 .dash-panel { display: flex; flex-direction: column; min-width: 0; }
 .dash-panel .panel-header { padding: 12px 16px 10px; }
 .dash-panel .panel-header h2 { font-size: 15px; }
@@ -669,9 +673,11 @@ html.light .category-card { border-color: var(--border); }
   .complaint-cards { grid-template-columns: 1fr; }
   .dashboard-grid { grid-template-columns: 1fr; }
 }
-@media (max-width: 900px) and (min-width: 851px) {
-  .dash-panels { grid-template-columns: 1fr 1fr; }
-  .dash-panels .dash-panel:last-child { grid-column: 1 / -1; }
+@media (max-width: 920px) {
+  .dash-layout { grid-template-columns: 1fr; }
+  .dash-main { grid-column: auto; grid-row: auto; }
+  .dash-feed { grid-column: auto; grid-row: auto; }
+  .dash-feed .feed { max-height: 420px; }
 }
 @media (min-width: 851px) {
   .sidebar { position: sticky; top: 0; height: 100vh; }
