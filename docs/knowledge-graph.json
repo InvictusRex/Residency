@@ -33,7 +33,11 @@
       "photo upload: StorageService abstraction, local implementation under uploads/complaints/, UUID filenames, MIME whitelist image/jpeg|png|webp + extension check + size cap MAX_UPLOAD_SIZE_MB (default 5MB); DB stores path reference only",
       "login accepts JSON {email,password}; Swagger Authorize uses OAuth2PasswordBearer tokenUrl /api/v1/auth/login",
       "resident sees own complaints only; foreign complaint returns 404 (not 403)",
-      "categories soft-deleted via is_active=false when referenced by complaints"
+      "categories soft-deleted via is_active=false when referenced by complaints",
+      "auth: access token ~10 min, refresh token 7 days; POST /auth/refresh; frontend single-flight refresh on 401; tokens in localStorage",
+      "complaints: sort=triage orders OPEN -> IN_PROGRESS -> RESOLVED then priority HIGH->LOW then newest (admin default)",
+      "complaints: POST /complaints/{id}/notes appends immutable progress entries to history (admin, rejected when RESOLVED)",
+      "users: /users/me/email and /users/me/password require current password; email uniqueness enforced"
     ],
     "seed": {
       "command": "python -m app.seed",
@@ -162,20 +166,38 @@
     }
   ],
   "services": {
-    "auth_service": "Registration, login with argon2 verification, JWT issue/verify, current-user resolution.",
+    "auth_service": "Register/authenticate, issue access+refresh tokens, refresh_session, change email/password.",
     "complaint_service": "CRUD for complaints, photo attachment, filtering/sorting/pagination, admin ordering, status/priority transitions with history recording and immutability checks.",
     "notice_service": "CRUD for notices with importance ordering and creation-time email trigger.",
     "notification_service": "Email dispatch as post-commit background tasks; no-op logging when EMAIL_ENABLED=false.",
     "storage_service": "Abstraction over file storage; local impl saves uploads/complaints/ with UUID filenames, MIME/extension whitelist and size cap.",
     "dashboard_service": "Aggregated summary counts/stats for the admin dashboard.",
     "overdue_service": "Dynamic overdue computation against overdue_threshold_days setting from system_settings.",
-    "settings_service": "Read/write key-value rows in system_settings incl. validation of overdue threshold range 1..365."
+    "settings_service": "Read/write key-value rows in system_settings incl. validation of overdue threshold range 1..365.",
+    "resident_service": "Admin list/search residents and toggle is_active."
   },
   "routes": [
     {
-      "method": "POST",
-      "path": "/api/v1/auth/register",
-      "purpose": "Register new user"
+      "method": "GET",
+      "path": "/api/v1/admin/residents",
+      "access": "admin",
+      "purpose": "List residents with filters + pagination"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/residents/{id}",
+      "access": "admin",
+      "purpose": "Activate/deactivate resident"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/settings",
+      "purpose": "View system settings (admin)"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/settings/overdue-threshold",
+      "purpose": "Edit overdue_threshold_days (range 1..365, admin)"
     },
     {
       "method": "POST",
@@ -188,9 +210,15 @@
       "purpose": "Current authenticated user"
     },
     {
-      "method": "PATCH",
-      "path": "/api/v1/users/me",
-      "purpose": "Update own profile"
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "access": "public",
+      "purpose": "Exchange refresh token for fresh access+refresh"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "purpose": "Register new user"
     },
     {
       "method": "GET",
@@ -228,9 +256,21 @@
       "purpose": "Get single complaint (404 if foreign for resident)"
     },
     {
-      "method": "PATCH",
-      "path": "/api/v1/complaints/{id}/status",
-      "purpose": "Transition status per lifecycle; OPEN->RESOLVED requires admin note; RESOLVED immutable; writes history"
+      "method": "GET",
+      "path": "/api/v1/complaints/{id}/history",
+      "purpose": "Status-change history (append-only)"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/complaints/{id}/notes",
+      "access": "admin",
+      "purpose": "Append immutable progress note to history"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/complaints/{id}/photo",
+      "access": "owner-or-admin",
+      "purpose": "Authenticated photo stream"
     },
     {
       "method": "PATCH",
@@ -238,9 +278,14 @@
       "purpose": "Set priority (admin); no history entry"
     },
     {
+      "method": "PATCH",
+      "path": "/api/v1/complaints/{id}/status",
+      "purpose": "Transition status per lifecycle; OPEN->RESOLVED requires admin note; RESOLVED immutable; writes history"
+    },
+    {
       "method": "GET",
-      "path": "/api/v1/complaints/{id}/history",
-      "purpose": "Status-change history (append-only)"
+      "path": "/api/v1/dashboard/summary",
+      "purpose": "Dashboard aggregate stats"
     },
     {
       "method": "GET",
@@ -268,19 +313,21 @@
       "purpose": "Delete notice (admin)"
     },
     {
-      "method": "GET",
-      "path": "/api/v1/dashboard/summary",
-      "purpose": "Dashboard aggregate stats"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/settings",
-      "purpose": "View system settings (admin)"
+      "method": "PATCH",
+      "path": "/api/v1/users/me",
+      "purpose": "Update own profile"
     },
     {
       "method": "PATCH",
-      "path": "/api/v1/admin/settings/overdue-threshold",
-      "purpose": "Edit overdue_threshold_days (range 1..365, admin)"
+      "path": "/api/v1/users/me/email",
+      "access": "authenticated",
+      "purpose": "Change own email (current password required)"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/users/me/password",
+      "access": "authenticated",
+      "purpose": "Change own password (current password required)"
     },
     {
       "method": "GET",

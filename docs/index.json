@@ -1,81 +1,598 @@
 {
-  ".env.example": { "purpose": "Template for all environment variables (DB URL, JWT secret, EMAIL_ENABLED, OVERDUE_THRESHOLD_DAYS, MAX_UPLOAD_SIZE_MB)", "owner_wave": 1 },
-  ".gitignore": { "purpose": "Ignore venv, __pycache__, .env, uploads/, *.pyc", "owner_wave": 1 },
-  "Dockerfile": { "purpose": "Python 3.12 slim image build for the API", "owner_wave": 1 },
-  "docker-compose.yml": { "purpose": "API + postgres services; postgres on host port 5433, internal db:5432", "owner_wave": 1 },
-  "pyproject.toml": { "purpose": "Project metadata, dependencies, and tool config (lint/format)", "owner_wave": 1 },
-  "requirements.txt": { "purpose": "Pinned runtime dependency list", "owner_wave": 1 },
-  "alembic.ini": { "purpose": "Alembic configuration pointing at app.db.session URL resolution", "owner_wave": 1 },
-  "README.md": { "purpose": "Setup, run, seed credentials (DEV ONLY), and endpoint overview", "owner_wave": 6 },
-
-  "app/__init__.py": { "purpose": "App package marker", "owner_wave": 1 },
-  "app/main.py": { "purpose": "FastAPI app factory: routers, exception handlers, health endpoints, startup wiring", "owner_wave": 5 },
-  "app/seed.py": { "purpose": "python -m app.seed; creates admin@example.com / resident@example.com demo accounts (DEV ONLY)", "owner_wave": 5 },
-
-  "app/core/config.py": { "purpose": "Pydantic Settings: env loading, DB URL, JWT secret/TTL, EMAIL_ENABLED, OVERDUE_THRESHOLD_DAYS default, MAX_UPLOAD_SIZE_MB", "owner_wave": 2 },
-  "app/core/security.py": { "purpose": "argon2 password hashing, PyJWT encode/decode, OAuth2PasswordBearer tokenUrl /api/v1/auth/login", "owner_wave": 2 },
-  "app/core/enums.py": { "purpose": "UserRole, ComplaintStatus, ComplaintPriority enums", "owner_wave": 2 },
-  "app/core/exceptions.py": { "purpose": "Domain exceptions mapped to {detail, code} error responses", "owner_wave": 2 },
-  "app/core/dependencies.py": { "purpose": "get_db session dependency, get_current_user, admin role guard", "owner_wave": 4 },
-
-  "app/db/base.py": { "purpose": "Declarative Base with UUID PK mixin and UTC timestamp conventions", "owner_wave": 2 },
-  "app/db/session.py": { "purpose": "Sync engine + SessionLocal factory from settings", "owner_wave": 2 },
-
-  "app/models/__init__.py": { "purpose": "Import all models for Alembic autogenerate", "owner_wave": 3 },
-  "app/models/user.py": { "purpose": "User model (uuid PK, unique email, role, is_active)", "owner_wave": 3 },
-  "app/models/category.py": { "purpose": "Category model (unique name, is_active soft delete)", "owner_wave": 3 },
-  "app/models/complaint.py": { "purpose": "Complaint model with FKs, enums, resolved_at, and all five indexes", "owner_wave": 3 },
-  "app/models/complaint_history.py": { "purpose": "Append-only history rows, FK CASCADE to complaint, index complaint_id", "owner_wave": 3 },
-  "app/models/notice.py": { "purpose": "Notice model with is_important index and composite (is_important, created_at) index", "owner_wave": 3 },
-  "app/models/system_setting.py": { "purpose": "Key-value SystemSetting model (key string PK)", "owner_wave": 3 },
-
-  "app/schemas/__init__.py": { "purpose": "Re-export schemas", "owner_wave": 3 },
-  "app/schemas/user.py": { "purpose": "UserCreate/UserRead/UserUpdate Pydantic v2 models", "owner_wave": 3 },
-  "app/schemas/category.py": { "purpose": "CategoryCreate/Update/Read schemas", "owner_wave": 3 },
-  "app/schemas/complaint.py": { "purpose": "ComplaintCreate(multipart form)/Read/StatusUpdate/PriorityUpdate + filter params", "owner_wave": 3 },
-  "app/schemas/complaint_history.py": { "purpose": "History read schema (status, actor, note, created_at)", "owner_wave": 3 },
-  "app/schemas/notice.py": { "purpose": "NoticeCreate/Update/Read schemas", "owner_wave": 3 },
-  "app/schemas/common.py": { "purpose": "Pagination envelope {total, limit, offset, items}", "owner_wave": 3 },
-  "app/schemas/settings.py": { "purpose": "System settings read/update schemas incl. threshold validation 1..365", "owner_wave": 3 },
-  "app/schemas/dashboard.py": { "purpose": "Dashboard summary response schema", "owner_wave": 3 },
-  "app/schemas/auth.py": { "purpose": "Login request/response and Token schema", "owner_wave": 3 },
-
-  "app/api/router.py": { "purpose": "Aggregates all route modules under /api/v1 prefix", "owner_wave": 4 },
-  "app/api/routes/__init__.py": { "purpose": "Routes package marker", "owner_wave": 4 },
-  "app/api/routes/auth.py": { "purpose": "POST register/login, GET me", "owner_wave": 4 },
-  "app/api/routes/users.py": { "purpose": "PATCH /users/me", "owner_wave": 4 },
-  "app/api/routes/categories.py": { "purpose": "GET/POST/PATCH/DELETE categories", "owner_wave": 4 },
-  "app/api/routes/complaints.py": { "purpose": "POST multipart create, filtered list, get/status/priority/history endpoints", "owner_wave": 4 },
-  "app/api/routes/notices.py": { "purpose": "GET/POST/PATCH/DELETE notices", "owner_wave": 4 },
-  "app/api/routes/dashboard.py": { "purpose": "GET /dashboard/summary", "owner_wave": 4 },
-  "app/api/routes/admin_settings.py": { "purpose": "GET settings, PATCH overdue-threshold", "owner_wave": 4 },
-
-  "app/services/__init__.py": { "purpose": "Services package marker", "owner_wave": 1 },
-  "app/services/auth_service.py": { "purpose": "Registration, login verification, JWT issue/verify", "owner_wave": 4 },
-  "app/services/complaint_service.py": { "purpose": "Complaint CRUD, lifecycle transitions + history, filters/sort/pagination, admin ordering, immutability of RESOLVED", "owner_wave": 4 },
-  "app/services/notice_service.py": { "purpose": "Notice CRUD, importance ordering, creation-time email trigger", "owner_wave": 4 },
-  "app/services/notification_service.py": { "purpose": "Post-commit background email dispatch; log-only when EMAIL_ENABLED=false", "owner_wave": 2 },
-  "app/services/storage_service.py": { "purpose": "Storage abstraction; local impl under uploads/complaints/ with UUID names, MIME whitelist, size cap", "owner_wave": 2 },
-  "app/services/dashboard_service.py": { "purpose": "Aggregate summary statistics queries", "owner_wave": 4 },
-  "app/services/overdue_service.py": { "purpose": "Dynamic overdue flag computation using overdue_threshold_days setting", "owner_wave": 4 },
-  "app/services/settings_service.py": { "purpose": "system_settings get/set with overdue threshold validation (1..365)", "owner_wave": 4 },
-
-  "alembic/env.py": { "purpose": "Alembic environment wired to app settings URL and model metadata", "owner_wave": 4 },
-  "alembic/script.py.mako": { "purpose": "Migration file template", "owner_wave": 4 },
-  "alembic/versions/0001_initial_schema.py": { "purpose": "Initial migration: users, categories, complaints, complaint_histories, notices, system_settings + indexes", "owner_wave": 4 },
-
-  "tests/conftest.py": { "purpose": "Creates/drops smt_test database, sync engine/session fixtures, auth client fixtures", "owner_wave": 6 },
-  "tests/test_auth.py": { "purpose": "Register/login/me flow tests", "owner_wave": 6 },
-  "tests/test_categories.py": { "purpose": "Category CRUD + soft-delete tests", "owner_wave": 6 },
-  "tests/test_complaints.py": { "purpose": "Lifecycle transitions, immutability, ownership 404, photo upload tests", "owner_wave": 6 },
-  "tests/test_complaint_filters.py": { "purpose": "Filtering, sorting, pagination, admin ordering tests", "owner_wave": 6 },
-  "tests/test_history.py": { "purpose": "Append-only history correctness tests", "owner_wave": 6 },
-  "tests/test_notices.py": { "purpose": "Notice ordering + importance email-on-creation-only tests", "owner_wave": 6 },
-  "tests/test_dashboard.py": { "purpose": "Dashboard summary accuracy tests", "owner_wave": 6 },
-  "tests/test_settings.py": { "purpose": "Overdue threshold validation/edit tests", "owner_wave": 6 },
-  "tests/test_overdue.py": { "purpose": "Dynamic overdue computation tests", "owner_wave": 6 },
-  "tests/test_health.py": { "purpose": "/health and /health/db probes", "owner_wave": 6 },
-
-  "docs/knowledge-graph.json": { "purpose": "Single source of truth: project, locked decisions, entities, relations, services, routes, waves, status", "owner_wave": 1 },
-  "docs/index.json": { "purpose": "Repo path -> purpose/owner_wave map for navigation across context compaction", "owner_wave": 1 }
+  ".dockerignore": {
+    "purpose": "Build context exclusions for the Docker image",
+    "owner_wave": 5
+  },
+  ".env.example": {
+    "purpose": "Template for env vars: DATABASE_URL, JWT_SECRET_KEY, ACCESS/REFRESH token TTL, CORS_ORIGINS, UPLOAD_DIR, EMAIL_*, OVERDUE_THRESHOLD_DAYS, Resend SMTP note",
+    "owner_wave": 1
+  },
+  ".github/workflows/backend-ci.yml": {
+    "purpose": "CI: Python 3.12 + PostgreSQL 16, alembic upgrade head, full pytest",
+    "owner_wave": 6
+  },
+  ".github/workflows/docker-publish.yml": {
+    "purpose": "Tag-triggered build + push of backend image to GHCR",
+    "owner_wave": 6
+  },
+  ".gitignore": {
+    "purpose": "Ignore venv, __pycache__, .env, uploads/, *.pyc, stitch reference",
+    "owner_wave": 1
+  },
+  "Dockerfile": {
+    "purpose": "python:3.12-slim image; copies backend/app + backend/alembic, PYTHONPATH=/app/backend",
+    "owner_wave": 1
+  },
+  "README.md": {
+    "purpose": "Setup, run, seed creds (DEV ONLY), API overview, frontend, CI, deployment",
+    "owner_wave": 6
+  },
+  "alembic.ini": {
+    "purpose": "script_location=backend/alembic; env.py injects DATABASE_URL from app settings",
+    "owner_wave": 1
+  },
+  "backend/alembic/env.py": {
+    "purpose": "Alembic env wired to app settings URL + model metadata",
+    "owner_wave": 4
+  },
+  "backend/alembic/script.py.mako": {
+    "purpose": "Migration file template",
+    "owner_wave": 4
+  },
+  "backend/alembic/versions/2026_08_23_initial_schema.py": {
+    "purpose": "Initial migration: all tables, enums, indexes, FKs",
+    "owner_wave": 4
+  },
+  "backend/app/__init__.py": {
+    "purpose": "Backend app package marker",
+    "owner_wave": 1
+  },
+  "backend/app/api/__init__.py": {
+    "purpose": "API package marker",
+    "owner_wave": 1
+  },
+  "backend/app/api/router.py": {
+    "purpose": "Aggregates all route modules under /api/v1",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/admin_residents.py": {
+    "purpose": "GET/PATCH /admin/residents (list, activate/deactivate)",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/admin_settings.py": {
+    "purpose": "GET settings, PATCH overdue-threshold",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/auth.py": {
+    "purpose": "register/login/refresh/me",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/categories.py": {
+    "purpose": "GET/POST/PATCH/DELETE categories",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/complaints.py": {
+    "purpose": "create/list/get/history/photo/status/priority/notes",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/dashboard.py": {
+    "purpose": "GET /dashboard/summary",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/health.py": {
+    "purpose": "/health, /health/db",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/notices.py": {
+    "purpose": "GET/POST/PATCH/DELETE notices",
+    "owner_wave": 4
+  },
+  "backend/app/api/routes/users.py": {
+    "purpose": "PATCH /users/me, /me/email, /me/password",
+    "owner_wave": 4
+  },
+  "backend/app/core/config.py": {
+    "purpose": "Pydantic Settings: DB URL, JWT secret, 10-min access / 7-day refresh TTL, CORS, uploads, email, overdue",
+    "owner_wave": 2
+  },
+  "backend/app/core/dependencies.py": {
+    "purpose": "get_current_user, require_admin, require_resident",
+    "owner_wave": 2
+  },
+  "backend/app/core/enums.py": {
+    "purpose": "Role, ComplaintStatus, ComplaintPriority enums",
+    "owner_wave": 2
+  },
+  "backend/app/core/exceptions.py": {
+    "purpose": "AppError hierarchy -> {detail, code}",
+    "owner_wave": 2
+  },
+  "backend/app/core/rate_limit.py": {
+    "purpose": "In-process sliding-window rate limiter (auth)",
+    "owner_wave": 4
+  },
+  "backend/app/core/security.py": {
+    "purpose": "argon2 hashing, access + refresh JWT encode/decode",
+    "owner_wave": 2
+  },
+  "backend/app/db/base.py": {
+    "purpose": "Declarative Base with naming conventions",
+    "owner_wave": 2
+  },
+  "backend/app/db/session.py": {
+    "purpose": "Sync engine + SessionLocal + get_db",
+    "owner_wave": 2
+  },
+  "backend/app/main.py": {
+    "purpose": "FastAPI app factory: routers, exception handlers, health, startup",
+    "owner_wave": 5
+  },
+  "backend/app/models/__init__.py": {
+    "purpose": "Imports all models for Alembic autogenerate",
+    "owner_wave": 3
+  },
+  "backend/app/models/category.py": {
+    "purpose": "Category: unique name, is_active soft delete",
+    "owner_wave": 3
+  },
+  "backend/app/models/complaint.py": {
+    "purpose": "Complaint: FKs, enums, resolved_at, indexes",
+    "owner_wave": 3
+  },
+  "backend/app/models/complaint_history.py": {
+    "purpose": "Append-only history, FK CASCADE to complaint",
+    "owner_wave": 3
+  },
+  "backend/app/models/notice.py": {
+    "purpose": "Notice: is_important, created_by, indexes",
+    "owner_wave": 3
+  },
+  "backend/app/models/setting.py": {
+    "purpose": "SystemSetting key-value (string PK) -> system_settings",
+    "owner_wave": 3
+  },
+  "backend/app/models/user.py": {
+    "purpose": "User: uuid PK, unique email, role, is_active",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/__init__.py": {
+    "purpose": "Schema re-exports",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/auth.py": {
+    "purpose": "Register/Login/Refresh/TokenResponse schemas",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/category.py": {
+    "purpose": "CategoryCreate/Update/Out",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/common.py": {
+    "purpose": "MessageResponse, PaginatedResponse[T]",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/complaint.py": {
+    "purpose": "ComplaintOut, Status/Priority/NoteCreate requests",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/complaint_history.py": {
+    "purpose": "HistoryEntryOut, HistoryListResponse",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/dashboard.py": {
+    "purpose": "DashboardSummary + SettingsOut + threshold request",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/notice.py": {
+    "purpose": "NoticeCreate/Update/Out",
+    "owner_wave": 3
+  },
+  "backend/app/schemas/user.py": {
+    "purpose": "UserOut, UserUpdateRequest, Email/Password/ResidentUpdate, ResidentList",
+    "owner_wave": 3
+  },
+  "backend/app/seed.py": {
+    "purpose": "python -m app.seed; admin/resident demo accounts + categories + optional sample data",
+    "owner_wave": 5
+  },
+  "backend/app/services/__init__.py": {
+    "purpose": "Services package marker",
+    "owner_wave": 1
+  },
+  "backend/app/services/auth_service.py": {
+    "purpose": "register/authenticate, token response, refresh_session, change email/password",
+    "owner_wave": 4
+  },
+  "backend/app/services/category_service.py": {
+    "purpose": "Category CRUD + case-insensitive uniqueness + soft delete",
+    "owner_wave": 4
+  },
+  "backend/app/services/complaint_service.py": {
+    "purpose": "Lifecycle transitions + history, filters/sort incl. triage, ownership scoping, progress notes",
+    "owner_wave": 4
+  },
+  "backend/app/services/dashboard_service.py": {
+    "purpose": "SQL aggregation for dashboard summary",
+    "owner_wave": 4
+  },
+  "backend/app/services/notice_service.py": {
+    "purpose": "Notice CRUD, importance ordering, creation email trigger",
+    "owner_wave": 4
+  },
+  "backend/app/services/notification_service.py": {
+    "purpose": "Post-commit background email dispatch; log-only when EMAIL_ENABLED=false",
+    "owner_wave": 2
+  },
+  "backend/app/services/overdue_service.py": {
+    "purpose": "Dynamic overdue predicate vs configurable threshold",
+    "owner_wave": 4
+  },
+  "backend/app/services/resident_service.py": {
+    "purpose": "Admin list/search residents + activate/deactivate",
+    "owner_wave": 4
+  },
+  "backend/app/services/settings_service.py": {
+    "purpose": "system_settings get/set for overdue threshold",
+    "owner_wave": 4
+  },
+  "backend/app/services/storage_service.py": {
+    "purpose": "Storage abstraction; local uploads/complaints/, UUID names, MIME+magic+size validation",
+    "owner_wave": 2
+  },
+  "backend/tests/__init__.py": {
+    "purpose": "Tests package marker",
+    "owner_wave": 6
+  },
+  "backend/tests/conftest.py": {
+    "purpose": "Creates/drops/migrates smt_test DB, fixtures, rate-limit reset",
+    "owner_wave": 6
+  },
+  "backend/tests/test_admin_residents.py": {
+    "purpose": "Admin resident list/deactivate + authz",
+    "owner_wave": 6
+  },
+  "backend/tests/test_auth.py": {
+    "purpose": "register/login/me/refresh + weak-password tests",
+    "owner_wave": 6
+  },
+  "backend/tests/test_authorization.py": {
+    "purpose": "Role/401/403 authorization matrix",
+    "owner_wave": 6
+  },
+  "backend/tests/test_complaints.py": {
+    "purpose": "Lifecycle, ownership 404, filters, photo, triage sort",
+    "owner_wave": 6
+  },
+  "backend/tests/test_dashboard.py": {
+    "purpose": "Dashboard aggregation accuracy",
+    "owner_wave": 6
+  },
+  "backend/tests/test_edge_cases.py": {
+    "purpose": "Upload abuse, whitespace, case-insensitive categories, date ranges, atomicity",
+    "owner_wave": 6
+  },
+  "backend/tests/test_history.py": {
+    "purpose": "Append-only history + progress notes",
+    "owner_wave": 6
+  },
+  "backend/tests/test_notices.py": {
+    "purpose": "Notice ordering + important-email behavior",
+    "owner_wave": 6
+  },
+  "backend/tests/test_overdue.py": {
+    "purpose": "Dynamic overdue threshold behavior",
+    "owner_wave": 6
+  },
+  "backend/tests/test_security_audit.py": {
+    "purpose": "Photo authz, expired JWT, rate limiting, CORS, boundary",
+    "owner_wave": 6
+  },
+  "backend/tests/test_user_account.py": {
+    "purpose": "Email + password change flows",
+    "owner_wave": 6
+  },
+  "docker-compose.yml": {
+    "purpose": "Postgres on host 5433 + backend (uploads volume, migrations on start)",
+    "owner_wave": 1
+  },
+  "docs/api.md": {
+    "purpose": "API reference",
+    "owner_wave": 6
+  },
+  "docs/architecture.md": {
+    "purpose": "System architecture documentation",
+    "owner_wave": 6
+  },
+  "docs/database.md": {
+    "purpose": "Schema documentation",
+    "owner_wave": 6
+  },
+  "docs/index.json": {
+    "purpose": "Repo path -> purpose/owner map",
+    "owner_wave": 1
+  },
+  "docs/knowledge-graph.json": {
+    "purpose": "Single source of truth: project, decisions, entities, relations, services, routes, waves, status",
+    "owner_wave": 1
+  },
+  "docs/notification-flow.md": {
+    "purpose": "Email notification flow documentation",
+    "owner_wave": 6
+  },
+  "frontend/.env.example": {
+    "purpose": "NEXT_PUBLIC_API_BASE_URL template",
+    "owner_wave": 6
+  },
+  "frontend/.gitignore": {
+    "purpose": "node_modules, .next, env.local, stitch reference",
+    "owner_wave": 6
+  },
+  "frontend/app/admin/categories/page.tsx": {
+    "purpose": "Admin category management + toggle + confirmations",
+    "owner_wave": 6
+  },
+  "frontend/app/admin/notices/page.tsx": {
+    "purpose": "Admin notice management table + dialogs",
+    "owner_wave": 6
+  },
+  "frontend/app/admin/residents/page.tsx": {
+    "purpose": "Admin resident management (list, activate/deactivate)",
+    "owner_wave": 6
+  },
+  "frontend/app/admin/settings/page.tsx": {
+    "purpose": "Overdue threshold settings",
+    "owner_wave": 6
+  },
+  "frontend/app/complaints/[id]/page.tsx": {
+    "purpose": "Complaint detail: status actions, progress notes, photo, timeline",
+    "owner_wave": 6
+  },
+  "frontend/app/complaints/page.tsx": {
+    "purpose": "Admin complaint management: search, filters, triage sort, CSV export, actions",
+    "owner_wave": 6
+  },
+  "frontend/app/dashboard/page.tsx": {
+    "purpose": "Admin dashboard: metrics, status donut (animated), by-category bars, system feed",
+    "owner_wave": 6
+  },
+  "frontend/app/globals.css": {
+    "purpose": "Neon Obsidian design system: tokens, light-mode overrides, components",
+    "owner_wave": 6
+  },
+  "frontend/app/icon.svg": {
+    "purpose": "Favicon: yellow square + black R",
+    "owner_wave": 6
+  },
+  "frontend/app/layout.tsx": {
+    "purpose": "Root layout: fonts (Space Grotesk/JetBrains Mono/Inter), providers, title 'Residency', favicon",
+    "owner_wave": 6
+  },
+  "frontend/app/login/page.tsx": {
+    "purpose": "Login page",
+    "owner_wave": 6
+  },
+  "frontend/app/my-complaints/new/page.tsx": {
+    "purpose": "Create complaint form with upload zone + preview",
+    "owner_wave": 6
+  },
+  "frontend/app/my-complaints/page.tsx": {
+    "purpose": "Resident complaints: stat cards, category chips, card grid",
+    "owner_wave": 6
+  },
+  "frontend/app/notices/page.tsx": {
+    "purpose": "Resident notice board (pinned/recent)",
+    "owner_wave": 6
+  },
+  "frontend/app/page.tsx": {
+    "purpose": "Home redirect by role",
+    "owner_wave": 6
+  },
+  "frontend/app/profile/page.tsx": {
+    "purpose": "Two-column profile: account/email | password/session",
+    "owner_wave": 6
+  },
+  "frontend/app/register/page.tsx": {
+    "purpose": "Register page",
+    "owner_wave": 6
+  },
+  "frontend/components.json": {
+    "purpose": "shadcn registry stub",
+    "owner_wave": 6
+  },
+  "frontend/components/animations/AnimatedContent.tsx": {
+    "purpose": "ReactBits GSAP scroll reveal",
+    "owner_wave": 6
+  },
+  "frontend/components/animations/AnimatedNumber.tsx": {
+    "purpose": "ReactBits count-up number",
+    "owner_wave": 6
+  },
+  "frontend/components/animations/BlurText.tsx": {
+    "purpose": "ReactBits blur-in text",
+    "owner_wave": 6
+  },
+  "frontend/components/auth-provider.tsx": {
+    "purpose": "Session restore, signIn/signOut, refresh-token sync",
+    "owner_wave": 6
+  },
+  "frontend/components/auth/AuthPage.tsx": {
+    "purpose": "Split-screen login/register",
+    "owner_wave": 6
+  },
+  "frontend/components/complaints/complaint-cards.tsx": {
+    "purpose": "Resident complaint cards",
+    "owner_wave": 6
+  },
+  "frontend/components/complaints/complaint-table.tsx": {
+    "purpose": "Admin complaint table (overdue, actions)",
+    "owner_wave": 6
+  },
+  "frontend/components/complaints/resolve-dialog.tsx": {
+    "purpose": "Resolve dialog with note requirement",
+    "owner_wave": 6
+  },
+  "frontend/components/complaints/status-actions.tsx": {
+    "purpose": "Start work / Resolve actions",
+    "owner_wave": 6
+  },
+  "frontend/components/complaints/table-status-actions.tsx": {
+    "purpose": "Row action menu for status",
+    "owner_wave": 6
+  },
+  "frontend/components/complaints/use-complaint-mutations.ts": {
+    "purpose": "Status/priority mutations + invalidation",
+    "owner_wave": 6
+  },
+  "frontend/components/query-provider.tsx": {
+    "purpose": "TanStack Query client provider",
+    "owner_wave": 6
+  },
+  "frontend/components/shared/page-title.tsx": {
+    "purpose": "Shared BlurText page-title entrance animation",
+    "owner_wave": 6
+  },
+  "frontend/components/shared/pagination.tsx": {
+    "purpose": "Server-side pagination control",
+    "owner_wave": 6
+  },
+  "frontend/components/shared/photo-image.tsx": {
+    "purpose": "Authenticated photo blob viewer",
+    "owner_wave": 6
+  },
+  "frontend/components/shared/states.tsx": {
+    "purpose": "Loading/Empty/Error states",
+    "owner_wave": 6
+  },
+  "frontend/components/shell.tsx": {
+    "purpose": "Role-aware shell: admin sidebar + resident topnav, theme switch, logout",
+    "owner_wave": 6
+  },
+  "frontend/components/theme-provider.tsx": {
+    "purpose": "Dark/Light theme toggle + persistence",
+    "owner_wave": 6
+  },
+  "frontend/components/ui/badge.tsx": {
+    "purpose": "Status/Priority badges + date formatters",
+    "owner_wave": 6
+  },
+  "frontend/components/ui/button.tsx": {
+    "purpose": "Button variants (cva)",
+    "owner_wave": 6
+  },
+  "frontend/components/ui/dialog.tsx": {
+    "purpose": "Accessible dialog/modal",
+    "owner_wave": 6
+  },
+  "frontend/components/ui/dropdown.tsx": {
+    "purpose": "Row action dropdown menu",
+    "owner_wave": 6
+  },
+  "frontend/components/ui/icon.tsx": {
+    "purpose": "Material Symbols icon component",
+    "owner_wave": 6
+  },
+  "frontend/components/ui/toast.tsx": {
+    "purpose": "Toast notification system",
+    "owner_wave": 6
+  },
+  "frontend/lib/api/client.ts": {
+    "purpose": "API client: auth headers, 401 single-flight refresh, pagination/filter builders, blob fetch",
+    "owner_wave": 6
+  },
+  "frontend/lib/query-keys.ts": {
+    "purpose": "TanStack query key factory",
+    "owner_wave": 6
+  },
+  "frontend/lib/types.ts": {
+    "purpose": "Backend-aligned TypeScript types",
+    "owner_wave": 6
+  },
+  "frontend/lib/utils.ts": {
+    "purpose": "cn() class merge helper",
+    "owner_wave": 6
+  },
+  "frontend/next-env.d.ts": {
+    "purpose": "Next TS env",
+    "owner_wave": 6
+  },
+  "frontend/next.config.mjs": {
+    "purpose": "Next config (unoptimized images)",
+    "owner_wave": 6
+  },
+  "frontend/package.json": {
+    "purpose": "Next.js 16 deps incl. motion + gsap (reactbits), tailwind v4",
+    "owner_wave": 6
+  },
+  "frontend/pnpm-lock.yaml": {
+    "purpose": "Lockfile",
+    "owner_wave": 6
+  },
+  "frontend/postcss.config.mjs": {
+    "purpose": "Tailwind v4 postcss",
+    "owner_wave": 6
+  },
+  "frontend/public/fonts/material-symbols-outlined.woff2": {
+    "purpose": "Self-hosted Material Symbols font",
+    "owner_wave": 6
+  },
+  "frontend/public/images/login-art.jpg": {
+    "purpose": "Login split-screen background image",
+    "owner_wave": 6
+  },
+  "frontend/tsconfig.json": {
+    "purpose": "TS strict, @/* -> ./* path alias",
+    "owner_wave": 6
+  },
+  "pyproject.toml": {
+    "purpose": "Project metadata, deps, pytest testpaths/pythonpath",
+    "owner_wave": 1
+  },
+  "requirements.txt": {
+    "purpose": "Runtime + dev dependency list",
+    "owner_wave": 1
+  },
+  "backend/app/core/__init__.py": {
+    "purpose": "Backend core package marker",
+    "owner_wave": 1
+  },
+  "backend/app/db/__init__.py": {
+    "purpose": "Backend db package marker",
+    "owner_wave": 1
+  },
+  "frontend/public/apple-icon.png": {
+    "purpose": "Apple touch icon asset",
+    "owner_wave": 6
+  },
+  "frontend/public/icon-dark-32x32.png": {
+    "purpose": "Icon asset",
+    "owner_wave": 6
+  },
+  "frontend/public/icon-light-32x32.png": {
+    "purpose": "Icon asset",
+    "owner_wave": 6
+  },
+  "frontend/public/icon.svg": {
+    "purpose": "Legacy icon asset",
+    "owner_wave": 6
+  },
+  "frontend/public/placeholder-logo.png": {
+    "purpose": "Placeholder asset (unused by UI)",
+    "owner_wave": 6
+  },
+  "frontend/public/placeholder-logo.svg": {
+    "purpose": "Placeholder asset (unused by UI)",
+    "owner_wave": 6
+  },
+  "frontend/public/placeholder-user.jpg": {
+    "purpose": "Placeholder asset (unused by UI)",
+    "owner_wave": 6
+  },
+  "frontend/public/placeholder.jpg": {
+    "purpose": "Placeholder asset (unused by UI)",
+    "owner_wave": 6
+  },
+  "frontend/public/placeholder.svg": {
+    "purpose": "Placeholder asset (unused by UI)",
+    "owner_wave": 6
+  }
 }
