@@ -164,3 +164,41 @@ def test_default_ordering_overdue_first_then_priority(
         item["priority"] for item in items[1:] if item["id"] == str(high_new["id"])
     )
     assert rest_ids.index(str(high_new["id"])) < rest_ids.index(str(low_new["id"]))
+
+
+def test_explicit_overdue_sort_puts_overdue_first_and_alt_sorts_override(
+    client, resident_headers, admin_headers, category_factory, complaint_factory
+):
+    category_id = category_factory()["id"]
+    overdue = complaint_factory(resident_headers, category_id)
+    fresh = complaint_factory(resident_headers, category_id)
+    _backdate_complaint(overdue["id"], 30)
+
+    overdue_first = client.get(f"{API}/complaints?sort=overdue", headers=admin_headers)
+    assert overdue_first.status_code == 200, overdue_first.text
+    ids = [item["id"] for item in overdue_first.json()["items"]]
+    assert str(overdue["id"]) in ids and str(fresh["id"]) in ids
+    assert ids.index(str(overdue["id"])) < ids.index(str(fresh["id"]))
+
+    alternate = client.get(f"{API}/complaints?sort=newest", headers=admin_headers)
+    assert alternate.status_code == 200, alternate.text
+    alt_ids = [item["id"] for item in alternate.json()["items"]]
+    assert alt_ids.index(str(fresh["id"])) < alt_ids.index(str(overdue["id"]))
+
+    triage = client.get(f"{API}/complaints?sort=triage", headers=admin_headers)
+    assert triage.status_code == 200, triage.text
+
+    resolved = complaint_factory(resident_headers, category_id)
+    resolve = client.patch(
+        f"{API}/complaints/{resolved['id']}/status",
+        headers=admin_headers,
+        json={"status": "RESOLVED", "note": "Fixed by maintenance"},
+    )
+    assert resolve.status_code == 200, resolve.text
+    _backdate_complaint(resolved["id"], 400)
+
+    overdue_list = client.get(f"{API}/complaints?sort=overdue", headers=admin_headers)
+    assert overdue_list.status_code == 200, overdue_list.text
+    sorted_ids = [item["id"] for item in overdue_list.json()["items"]]
+    assert str(resolved["id"]) in sorted_ids
+    assert sorted_ids.index(str(overdue["id"])) < sorted_ids.index(str(resolved["id"]))

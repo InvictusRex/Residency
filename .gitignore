@@ -17,3 +17,7 @@ dist/
 # Stitch design reference (zip + extracted) - local reference only
 stitch_residency_management_system.zip
 stitch_residency_management_system/
+
+# Generated knowledge/index files (regenerated locally, not committed)
+docs/knowledge-graph.json
+docs/index.json

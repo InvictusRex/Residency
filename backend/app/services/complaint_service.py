@@ -179,6 +179,8 @@ def list_complaints(
         stmt = stmt.order_by(status_case.asc(), priority_case.asc(), Complaint.created_at.desc())
     elif sort == "newest":
         stmt = stmt.order_by(Complaint.created_at.desc())
+    elif sort == "overdue":
+        stmt = stmt.order_by(overdue_case.desc(), priority_case.asc(), Complaint.created_at.desc())
     elif user.role != Role.ADMIN:
         stmt = stmt.order_by(Complaint.created_at.desc())
     else:

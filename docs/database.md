@@ -68,7 +68,7 @@ Deactivation (soft delete) hides the category from residents while keeping exist
 
 Indexes: `ix_complaints_resident_id`, `ix_complaints_category_id`, `ix_complaints_status`, `ix_complaints_priority`, `ix_complaints_created_at`. These cover the common list queries (resident scoping, status/priority filters, date-range and overdue computations).
 
-There is no stored "overdue" column or flag — overdue is derived at query time (see below).
+There is no stored "overdue" column or flag; overdue is derived at query time (see below).
 
 ### complaint_history
 

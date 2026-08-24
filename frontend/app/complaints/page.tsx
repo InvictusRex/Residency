@@ -29,7 +29,7 @@ export default function AdminComplaintsPage() {
   const [status, setStatus] = useState<Status | ''>('')
   const [priority, setPriority] = useState<Priority | ''>('')
   const [overdue, setOverdue] = useState<'' | 'true' | 'false'>('')
-  const [sort, setSort] = useState<Sort>('triage')
+  const [sort, setSort] = useState<Sort>('overdue')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [rangeError, setRangeError] = useState('')
@@ -193,6 +193,7 @@ export default function AdminComplaintsPage() {
           <label>
             Sort
             <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+              <option value="overdue">Overdue first</option>
               <option value="triage">Triage (Open first)</option>
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>

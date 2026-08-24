@@ -44,18 +44,18 @@ Two cross-cutting infrastructure concerns sit behind narrow service interfaces s
 
 Interface: `save_file(data, original_filename, content_type) -> StoredFile`, `delete_file(storage_path)`, `resolve_file(storage_path)`, `media_type_for(storage_path)`.
 
-The default implementation writes to the local filesystem under `{UPLOAD_DIR}/complaints/<uuid-hex>.<ext>`, validates content type against extension and file magic bytes, enforces `MAX_UPLOAD_SIZE_MB`, and rejects unsafe paths on resolve/delete. The database stores only the relative path; files are served exclusively through the authenticated endpoint `GET /api/v1/complaints/{id}/photo` (owner or admin), so no public static route exists. To move to S3 or another object store, implement the same methods — no other module needs to change.
+The default implementation writes to the local filesystem under `{UPLOAD_DIR}/complaints/<uuid-hex>.<ext>`, validates content type against extension and file magic bytes, enforces `MAX_UPLOAD_SIZE_MB`, and rejects unsafe paths on resolve/delete. The database stores only the relative path; files are served exclusively through the authenticated endpoint `GET /api/v1/complaints/{id}/photo` (owner or admin), so no public static route exists. To move to S3 or another object store, implement the same methods; no other module needs to change.
 
 ### NotificationService (`app/services/notification_service.py`)
 
-Interface: `send_complaint_status_changed_email(...)`, `send_important_notice_email(...)`. The single implementation uses SMTP (implicit TLS on port 465, STARTTLS otherwise). With `EMAIL_ENABLED=false` it logs a skip line instead of sending, which keeps development and test flows fully functional without an SMTP server. Delivery failures are caught, logged, and reported as a `False` return — they never propagate into request handling.
+Interface: `send_complaint_status_changed_email(...)`, `send_important_notice_email(...)`. The single implementation uses SMTP (implicit TLS on port 465, STARTTLS otherwise). With `EMAIL_ENABLED=false` it logs a skip line instead of sending, which keeps development and test flows fully functional without an SMTP server. Delivery failures are caught, logged, and reported as a `False` return; they never propagate into request handling.
 
 ## Transaction Strategy
 
 Sessions are created per request by `get_db`. Services own transaction boundaries explicitly:
 
 - **Create complaint**: category check, file save, complaint insert, initial history row ("Complaint created"), then a single `db.commit()`. The photo is written before the DB commit; if validation fails earlier, nothing persists.
-- **Status change**: the status update, `resolved_at` stamping, and the new `complaint_history` row are committed atomically in one transaction — a status change can never exist without its audit entry.
+- **Status change**: the status update, `resolved_at` stamping, and the new `complaint_history` row are committed atomically in one transaction, so a status change can never exist without its audit entry.
 - **Emails are dispatched after commit.** Routes enqueue `notification_service` methods on FastAPI `BackgroundTasks`, which run only once the response transaction has succeeded. A provider outage therefore cannot roll back or corrupt data; it can only lose an email.
 - The important-notice fan-out runs entirely in the background task and opens its own short-lived session (`SessionLocal`) rather than reusing the request session, since the request session is closed by then.
 - Priority changes intentionally do not write history; they are treated as triage metadata, not lifecycle events.

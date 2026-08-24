@@ -60,11 +60,11 @@ Step details:
 
 1. The admin submits a status change. `require_admin` rejects non-admins (403) before any business logic runs.
 2. The service checks the transition map. Illegal transitions raise 409 `invalid_status_transition`; a note-less OPEN -> RESOLVED raises 422 `note_required_for_direct_resolution`. On rejection, nothing is written and no email is enqueued.
-3. The status update, `resolved_at` stamping, and history row commit atomically — the audit entry cannot exist without the status change and vice versa.
+3. The status update, `resolved_at` stamping, and history row commit atomically, so the audit entry cannot exist without the status change and vice versa.
 4. Only after commit is the email task registered. The response returns immediately without waiting for SMTP.
 5. The background task composes the email to the resident's address (old status, new status, optional admin note) and delivers it. Failure is logged only.
 
-Priority changes do not trigger this flow — they write no history and send no email.
+Priority changes do not trigger this flow; they write no history and send no email.
 
 ## Flow 2: Important Notice Creation
 
@@ -105,7 +105,7 @@ Non-important notices skip step 3 entirely.
 
 ### Why toggling importance later does not resend
 
-The trigger condition lives exclusively in the create route (`if notice.is_important: enqueue`). `PATCH /notices/{id}` never touches the notification path, so flipping `is_important` on an existing notice — in either direction — changes only listing order. This is intentional: it prevents accidental mass re-mailing and keeps "who was notified" equivalent to "who existed when an important notice was created".
+The trigger condition lives exclusively in the create route (`if notice.is_important: enqueue`). `PATCH /notices/{id}` never touches the notification path, so flipping `is_important` on an existing notice in either direction changes only listing order. This is intentional: it prevents accidental mass re-mailing and keeps "who was notified" equivalent to "who existed when an important notice was created".
 
 ## Testing Note
 

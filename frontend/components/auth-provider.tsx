@@ -23,25 +23,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const saved = localStorage.getItem(TOKEN_KEY)
-    if (!saved) {
-      setLoading(false)
-      return
+    let active = true
+    const restore = async () => {
+      try {
+        const saved = localStorage.getItem(TOKEN_KEY)
+        if (!saved) return
+        setToken(saved)
+        try {
+          const u = await api.me(saved)
+          if (!active) return
+          setUser(u)
+          localStorage.setItem(USER_KEY, JSON.stringify(u))
+        } catch {
+          if (!active) return
+          localStorage.removeItem(TOKEN_KEY)
+          localStorage.removeItem(REFRESH_KEY)
+          localStorage.removeItem(USER_KEY)
+          setToken(null)
+        }
+      } catch {
+        if (active) setToken(null)
+      } finally {
+        if (active) setLoading(false)
+      }
     }
-    setToken(saved)
-    api
-      .me(saved)
-      .then((u) => {
-        setUser(u)
-        localStorage.setItem(USER_KEY, JSON.stringify(u))
-      })
-      .catch(() => {
-        localStorage.removeItem(TOKEN_KEY)
-        localStorage.removeItem(REFRESH_KEY)
-        localStorage.removeItem(USER_KEY)
-        setToken(null)
-      })
-      .finally(() => setLoading(false))
+    restore()
+    return () => {
+      active = false
+    }
   }, [])
 
   useEffect(() => {

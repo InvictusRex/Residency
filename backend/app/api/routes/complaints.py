@@ -64,7 +64,7 @@ def list_complaints(
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
     overdue: bool | None = Query(default=None),
-    sort: str | None = Query(default=None, pattern="^(newest|oldest|priority|triage)$"),
+    sort: str | None = Query(default=None, pattern="^(newest|oldest|priority|triage|overdue)$"),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ComplaintListResponse:
