@@ -13,3 +13,7 @@ node_modules/
 htmlcov/
 .coverage
 dist/
+
+# Stitch design reference (zip + extracted) - local reference only
+stitch_residency_management_system.zip
+stitch_residency_management_system/
