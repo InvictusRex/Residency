@@ -395,7 +395,8 @@
     "fix_icons_donut_progress": "done: Material Symbols self-hosted woff2 (no CDN dependency, no raw icon text); donut center re-aligned via sized wrap + flex overlay; new POST /api/v1/complaints/{id}/notes appends immutable progress entries to history (admin only, rejected when RESOLVED) + frontend Progress Update composer on detail page",
     "auth_persistence_login_fidelity": "done: token/user persisted in localStorage (no more logout on reload/new tab); login page matches Stitch HTML: self-hosted building image + dark overlay + Sector 7G copy + corner box, mail/lock icons in inputs, password visibility toggle, arrow CTA, theme switcher top-left",
     "page_design_audit": "done: all pages aligned to Stitch HTML; Export CSV implemented (frontend paginates complaints API respecting filters -> downloadable csv); dashboard keeps 5 real metrics",
-    "dashboard_stitch_fidelity": "done: dashboard rebuilt to Stitch composition (4 metric cards: Total/Open/Resolved/Overdue; 3 equal panels: Status Distribution donut | By Category vertical bars | System Feed), 220px compact sidebar, Material Symbols font guarded with !important against generic span/strong selectors, removed motion/gsap wrappers from dashboard (kept subtle count-up), responsive 3->2->1 columns"
+    "dashboard_stitch_fidelity": "done: dashboard rebuilt to Stitch composition (4 metric cards: Total/Open/Resolved/Overdue; 3 equal panels: Status Distribution donut | By Category vertical bars | System Feed), 220px compact sidebar, Material Symbols font guarded with !important against generic span/strong selectors, removed motion/gsap wrappers from dashboard (kept subtle count-up), responsive 3->2->1 columns",
+    "dashboard_composition_pass2": "done: second row is a true 3-column grid (Status | By Category | System Feed) at equal vertical start on all desktop widths; donut enlarged to 196px thick-ring; bar chart fills card height; feed fills panel height + internal scroll; sidebar New Notice moved to bottom (Stitch); complaints page got prominent search (client-side filter of current result set, no backend search invented)"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",
@@ -435,7 +436,13 @@
     "Material Symbols specificity bug: .material-symbols-outlined font-family now !important; .metric span/strong/small -> .metric-label/.metric-value/.metric-note classes; .complaint-card-meta span -> > span",
     "dashboard: exactly 4 metric cards, 3-column panel row (status/category/feed), compact donut 96px + vertical bar chart 168px + compact feed",
     "sidebar narrowed to 220px with compact nav/identity",
-    "removed AnimatedContent/BlurText from dashboard for visual fidelity (kept AnimatedNumber count-up)"
+    "removed AnimatedContent/BlurText from dashboard for visual fidelity (kept AnimatedNumber count-up)",
+    "dashboard: .dash-panels 3-col grid >=851px with align-items:stretch so feed sits beside graphs at same vertical start; removed 2-col collapse at 851-1180",
+    "donut: 196px, stroke 16, larger center total",
+    "bar chart: flex-fills panel height (min 300px), dynamic from by_category",
+    "feed: flex-fills + overflow-y auto (internal scroll)",
+    "sidebar: New Notice CTA moved to bottom footer (identity top, nav, footer: New Notice + theme + logout)",
+    "complaints: full-width search bar filters current page client-side (ID/title/resident/category/status/priority), pagination hidden while searching, count shows shown-of-total"
   ],
   "security_review": {
     "date": "2026-08-23",

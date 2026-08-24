@@ -24,6 +24,7 @@ export default function AdminComplaintsPage() {
   const toast = useToast()
   const [page, setPage] = useState(1)
   const [exporting, setExporting] = useState(false)
+  const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState<Status | ''>('')
   const [priority, setPriority] = useState<Priority | ''>('')
@@ -53,6 +54,16 @@ export default function AdminComplaintsPage() {
     queryKey: queryKeys.complaints(`admin${qs}`),
     queryFn: () => api.complaints(token!, qs),
   })
+
+  const qsTrim = search.trim().toLowerCase()
+  const visibleItems = qsTrim
+    ? (q.data?.items ?? []).filter((c) =>
+        [c.id, c.description, c.category.name, c.resident.name, c.resident.email, c.status, c.priority]
+          .join(' ')
+          .toLowerCase()
+          .includes(qsTrim),
+      )
+    : (q.data?.items ?? [])
 
   function applyFilters() {
     if (dateFrom && dateTo && dateFrom > dateTo) {
@@ -124,11 +135,24 @@ export default function AdminComplaintsPage() {
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>{q.data?.total ?? 0} complaints</h2>
+            <h2>
+              {qsTrim ? `${visibleItems.length} shown of ` : ''}
+              {q.data?.total ?? 0} complaints
+            </h2>
             <p>Fetched from the backend</p>
           </div>
         </div>
         <div className="filters">
+          <div className="search" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name="search" size={18} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search ID, title, resident…"
+              aria-label="Search complaints"
+              style={{ border: 'none', background: 'transparent', color: 'var(--text)', width: '100%', outline: 'none' }}
+            />
+          </div>
           <label>
             Category
             <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
@@ -197,19 +221,22 @@ export default function AdminComplaintsPage() {
           <LoadingState />
         ) : q.error ? (
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
-        ) : q.data?.items.length ? (
+        ) : visibleItems.length ? (
           <>
             <ComplaintTable
-              items={q.data.items}
+              items={visibleItems}
               showResident
               admin
               token={token!}
               overdueThresholdDays={settings.data?.overdue_threshold_days}
             />
-            <Pagination page={page} pageSize={PAGE_SIZE} total={q.data.total} onChange={setPage} />
+            {!qsTrim && <Pagination page={page} pageSize={PAGE_SIZE} total={q.data.total} onChange={setPage} />}
           </>
         ) : (
-          <EmptyState title="No complaints match" message="Try adjusting the filters." />
+          <EmptyState
+            title={qsTrim ? 'No complaints match your search' : 'No complaints match'}
+            message={qsTrim ? 'Try a different search term or clear the filters.' : 'Try adjusting the filters.'}
+          />
         )}
       </section>
     </Shell>

@@ -175,11 +175,6 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
           </button>
         </div>
 
-        <button className="primary side-cta" onClick={() => router.push('/admin/notices')}>
-          <Icon name="add" size={18} />
-          New Notice
-        </button>
-
         <nav className="nav">
           {nav.map(({ href, label, icon }) => (
             <button
@@ -197,6 +192,10 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
         </nav>
 
         <div className="side-footer">
+          <button className="primary side-cta" onClick={() => router.push('/admin/notices')}>
+            <Icon name="add" size={18} />
+            New Notice
+          </button>
           <ThemeSwitch />
           <SignOutButton />
         </div>

@@ -141,8 +141,8 @@ function Donut({ segments }: { segments: { value: number; color: string }[] }) {
   const c = 2 * Math.PI * r
   let offset = 0
   return (
-    <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
-      <circle cx="48" cy="48" r={r} fill="none" stroke="#262626" strokeWidth="11" />
+    <svg width="196" height="196" viewBox="0 0 96 96" aria-hidden="true">
+      <circle cx="48" cy="48" r={r} fill="none" stroke="#262626" strokeWidth="16" />
       {total > 0 &&
         segments
           .filter((s) => s.value > 0)
@@ -156,7 +156,7 @@ function Donut({ segments }: { segments: { value: number; color: string }[] }) {
                 r={r}
                 fill="none"
                 stroke={s.color}
-                strokeWidth="11"
+                strokeWidth="16"
                 strokeDasharray={`${len} ${c - len}`}
                 strokeDashoffset={-offset}
                 transform="rotate(-90 48 48)"
