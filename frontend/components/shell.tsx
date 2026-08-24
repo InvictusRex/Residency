@@ -12,6 +12,7 @@ const adminNav: NavItem[] = [
   { href: '/complaints', label: 'Complaints', icon: 'report_problem', admin: true },
   { href: '/admin/notices', label: 'Notices', icon: 'campaign', admin: true },
   { href: '/admin/categories', label: 'Categories', icon: 'category', admin: true },
+  { href: '/admin/residents', label: 'Residents', icon: 'groups', admin: true },
   { href: '/admin/settings', label: 'Settings', icon: 'settings', admin: true },
   { href: '/profile', label: 'Profile', icon: 'account_circle' },
 ]
@@ -64,6 +65,25 @@ function SignOutButton() {
   )
 }
 
+function TopbarSignOut() {
+  const { signOut } = useAuth()
+  const router = useRouter()
+  return (
+    <button
+      className="topnav-link"
+      style={{ border: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+      onClick={() => {
+        signOut()
+        router.replace('/login')
+      }}
+      aria-label="Logout"
+    >
+      <Icon name="logout" size={17} />
+      Logout
+    </button>
+  )
+}
+
 export function Shell({ children, title }: { children: React.ReactNode; title: string }) {
   const { user, loading } = useAuth()
   const [mobile, setMobile] = useState(false)
@@ -107,6 +127,7 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
           </div>
           <div className="topnav-right">
             <ThemeSwitch />
+            <TopbarSignOut />
             <button
               className="menu-btn"
               onClick={() => setResidentMenu((v) => !v)}

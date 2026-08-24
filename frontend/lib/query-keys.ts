@@ -6,5 +6,6 @@ export const queryKeys = {
   notices: (key?: string) => (key ? (['notices', key] as const) : (['notices'] as const)),
   dashboard: ['dashboard'] as const,
   settings: ['settings'] as const,
+  residents: (key?: string) => (key ? (['residents', key] as const) : (['residents'] as const)),
   profile: ['profile'] as const,
 }

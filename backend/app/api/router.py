@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    admin_residents,
     admin_settings,
     auth,
     categories,
@@ -18,3 +19,4 @@ api_router.include_router(complaints.router)
 api_router.include_router(notices.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(admin_settings.router)
+api_router.include_router(admin_residents.router)

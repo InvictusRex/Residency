@@ -13,6 +13,15 @@ export default function ProfilePage() {
   const [name, setName] = useState(user?.name ?? '')
   const [error, setError] = useState('')
 
+  const [email, setEmail] = useState(user?.email ?? '')
+  const [emailPassword, setEmailPassword] = useState('')
+  const [emailError, setEmailError] = useState('')
+
+  const [curPassword, setCurPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+
   const m = useMutation({
     mutationFn: () => api.profile(token!, name.trim()),
     onSuccess: (u) => {
@@ -21,6 +30,30 @@ export default function ProfilePage() {
       toast.toast('success', 'Profile updated.')
     },
     onError: (err) => setError(errorMessage(err)),
+  })
+
+  const emailMutation = useMutation({
+    mutationFn: () => api.updateEmail(token!, { email: email.trim(), current_password: emailPassword }),
+    onSuccess: (u) => {
+      signIn(token!, u)
+      setEmailPassword('')
+      setEmailError('')
+      toast.toast('success', 'Email updated.')
+    },
+    onError: (err) => setEmailError(errorMessage(err)),
+  })
+
+  const passwordMutation = useMutation({
+    mutationFn: () =>
+      api.changePassword(token!, { current_password: curPassword, new_password: newPassword }),
+    onSuccess: () => {
+      setCurPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setPasswordError('')
+      toast.toast('success', 'Password changed. Use the new password next time you sign in.')
+    },
+    onError: (err) => setPasswordError(errorMessage(err)),
   })
 
   function save(e: React.FormEvent) {
@@ -33,13 +66,45 @@ export default function ProfilePage() {
     m.mutate()
   }
 
+  function saveEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setEmailError('')
+    if (email.trim() === (user?.email ?? '')) {
+      setEmailError('Enter a different email address.')
+      return
+    }
+    if (!emailPassword) {
+      setEmailError('Enter your current password to confirm the change.')
+      return
+    }
+    emailMutation.mutate()
+  }
+
+  function savePassword(e: React.FormEvent) {
+    e.preventDefault()
+    setPasswordError('')
+    if (!curPassword || !newPassword) {
+      setPasswordError('Enter your current and new password.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match.')
+      return
+    }
+    if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      setPasswordError('New password must be at least 8 characters with an uppercase letter, a lowercase letter, and a digit.')
+      return
+    }
+    passwordMutation.mutate()
+  }
+
   return (
     <Shell title="Profile">
       <div className="page-heading">
         <div>
           <p className="eyebrow">Account</p>
           <h1>Your Profile</h1>
-          <p className="subheading">Manage your account details and preferences.</p>
+          <p className="subheading">Manage your account details and security.</p>
         </div>
       </div>
 
@@ -67,15 +132,62 @@ export default function ProfilePage() {
               <span className="field-label">Full Name</span>
               <input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={120} />
             </label>
-            <label>
-              <span className="field-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                Email Address <Icon name="lock" size={14} />
-              </span>
-              <input value={user?.email ?? ''} disabled style={{ opacity: 0.6 }} />
-            </label>
             {error && <p className="form-error">{error}</p>}
             <button className="primary" type="submit" disabled={m.isPending} style={{ justifySelf: 'flex-start' }}>
               {m.isPending ? 'Saving…' : 'Save Changes'}
+            </button>
+          </form>
+        </section>
+
+        <section className="panel" style={{ padding: 24 }}>
+          <div style={{ paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+            <div className="section-label">Email Address</div>
+          </div>
+          <form className="form-panel" style={{ padding: '18px 0 0', gap: 16 }} onSubmit={saveEmail}>
+            <label>
+              <span className="field-label">Email</span>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </label>
+            <label>
+              <span className="field-label">Current Password</span>
+              <input
+                type="password"
+                value={emailPassword}
+                onChange={(e) => setEmailPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="Required to confirm the change"
+              />
+            </label>
+            {emailError && <p className="form-error">{emailError}</p>}
+            <button className="primary" type="submit" disabled={emailMutation.isPending} style={{ justifySelf: 'flex-start' }}>
+              {emailMutation.isPending ? 'Updating…' : 'Update Email'}
+            </button>
+          </form>
+        </section>
+
+        <section className="panel" style={{ padding: 24 }}>
+          <div style={{ paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+            <div className="section-label">Change Password</div>
+          </div>
+          <form className="form-panel" style={{ padding: '18px 0 0', gap: 16 }} onSubmit={savePassword}>
+            <label>
+              <span className="field-label">Current Password</span>
+              <input type="password" value={curPassword} onChange={(e) => setCurPassword(e.target.value)} autoComplete="current-password" />
+            </label>
+            <label>
+              <span className="field-label">New Password</span>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
+            </label>
+            <label>
+              <span className="field-label">Confirm New Password</span>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+            </label>
+            <span className="field-hint" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+              At least 8 characters with an uppercase letter, a lowercase letter, and a digit.
+            </span>
+            {passwordError && <p className="form-error">{passwordError}</p>}
+            <button className="primary" type="submit" disabled={passwordMutation.isPending} style={{ justifySelf: 'flex-start' }}>
+              {passwordMutation.isPending ? 'Updating…' : 'Change Password'}
             </button>
           </form>
         </section>

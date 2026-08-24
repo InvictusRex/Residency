@@ -101,6 +101,13 @@ export const api = {
   me: (token: string) => apiRequest<User>('/auth/me', {}, token),
   profile: (token: string, name: string) =>
     apiRequest<User>('/users/me', { method: 'PATCH', body: JSON.stringify({ name }) }, token),
+  updateEmail: (token: string, body: { email: string; current_password: string }) =>
+    apiRequest<User>('/users/me/email', { method: 'PATCH', body: JSON.stringify(body) }, token),
+  changePassword: (token: string, body: { current_password: string; new_password: string }) =>
+    apiRequest<{ message: string }>('/users/me/password', { method: 'PATCH', body: JSON.stringify(body) }, token),
+  adminResidents: (token: string, query = '') => apiRequest<Page<User>>(`/admin/residents${query}`, {}, token),
+  setResidentActive: (token: string, id: string, is_active: boolean) =>
+    apiRequest<User>(`/admin/residents/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active }) }, token),
 
   complaints: (token: string, query = '') => apiRequest<Page<Complaint>>(`/complaints${query}`, {}, token),
   complaint: (token: string, id: string) => apiRequest<Complaint>(`/complaints/${id}`, {}, token),
