@@ -44,7 +44,7 @@ flowchart TD
 
 - **Frontend.** Next.js 16 App Router, TypeScript, Tailwind v4, TanStack Query. It calls the backend REST API directly. No mocks, no client-side fake data.
 - **Backend.** FastAPI with SQLAlchemy 2.x (sync), Pydantic v2, Alembic migrations, psycopg 3.
-- **Database.** PostgreSQL 16. Runs locally via Docker on host port 5433, or on any managed provider.
+- **Database.** PostgreSQL 16, run inside the Docker Compose stack on the internal network. Host port 5433 is bound to the loopback interface only, for host-based development tooling.
 - **Authentication.** HS256 JWTs for access (10 min) and refresh (7 days), argon2 password hashing, roles checked server-side on every request.
 - **Photo storage.** The local filesystem behind `StorageService`, mounted as a persistent Docker volume so uploads survive restarts.
 - **Email.** `NotificationService` dispatches post-commit background tasks over SMTP. Resend's relay is the production provider.
@@ -365,23 +365,26 @@ The frontend runs at http://localhost:3000.
 
 ### 3. Full-stack via Docker Compose
 
+The whole application (PostgreSQL, migrations, backend API, and frontend) runs as one Compose stack. See [Self-Hosting with Docker Compose](#self-hosting-with-docker-compose) for the full guide. From the repository root:
+
 ```powershell
-docker compose up --build
+copy .env.example .env        # bash: cp .env.example .env
+docker compose up -d --build
 ```
 
-This runs the database and the backend container (which applies migrations on startup) with a persistent uploads volume. The API is exposed at http://localhost:8000. The frontend is not containerized; run it locally as above.
+This brings up every service. The API is at http://localhost:8000 and the frontend at http://localhost:3000.
 
 ### Ports
 
-| Service | Port |
-| --- | --- |
-| Backend (API + docs) | 8000 (Docker) / 18000 (local dev) |
-| Frontend (Next.js) | 3000 |
-| PostgreSQL | 5433 (host) / 5432 (Docker network) |
+| Service | Port (bound to 127.0.0.1) | Internal |
+| --- | --- | --- |
+| Frontend (Next.js) | 3000 | frontend:3000 |
+| Backend (API + docs) | 8000 | backend:8000 |
+| PostgreSQL | 5433 (host tooling only) | db:5432 |
 
 ### Photo storage directory
 
-Uploads land in `uploads/complaints/` relative to the backend working directory. In Docker this is a named volume (`uploads`) mounted at `/app/uploads`.
+Uploads land in `uploads/complaints/` relative to the backend working directory. In the Compose stack this is a named volume (`uploads`) mounted at `/app/uploads`, so complaint photos survive container recreation and rebuilds.
 
 ### Email configuration
 
@@ -408,55 +411,218 @@ Everything below comes from [.env.example](.env.example). Copy it to `.env` and 
 | `OVERDUE_THRESHOLD_DAYS` | `3` | Fallback overdue threshold when unset in the DB |
 | `ENVIRONMENT` / `DEBUG` | `development` / `true` | Environment mode |
 
+### Compose / database
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `POSTGRES_USER` | `smt` | Database user (Compose `db` service) |
+| `POSTGRES_PASSWORD` | `smt` | Database password (Compose `db` service) |
+| `POSTGRES_DB` | `society_maintenance` | Database name (Compose `db` service) |
+
 ### Frontend
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_API_BASE_URL` | `http://127.0.0.1:18000` | Base URL of the FastAPI backend (without `/api/v1`) |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | Base URL of the FastAPI backend (without `/api/v1`); baked into the frontend image at build time |
 
-## Docker Deployment
+For a public installation, rebuild the frontend with `NEXT_PUBLIC_API_BASE_URL=https://api.<your-domain>` (see [Local vs public API URL](#local-vs-public-api-url)).
 
-The backend image is built from the root `Dockerfile` (`python:3.12-slim`) and published to **GitHub Container Registry (GHCR)** by `.github/workflows/docker-publish.yml`, which triggers on every `v*` tag push.
+## Self-Hosting with Docker Compose
 
-- **Image:** `ghcr.io/<owner>/<repo>/residency-backend`
-- **Tags:** the version tag (for example `v1.1.0`) plus `latest`
-- **Port:** 8000 (configurable via `PORT`)
-- **Photo persistence:** mount a volume at `/app/uploads` (the compose stack already does this with a named `uploads` volume).
+Residency is a self-contained Docker Compose application. You can run it on any machine with Docker installed, with no cloud platform and no external service required (email excepted, if you enable it).
 
-```bash
-docker pull ghcr.io/<owner>/<repo>/residency-backend:v1.1.0
-
-docker run -d --name residency \
-  -p 8000:8000 \
-  -v residency-uploads:/app/uploads \
-  -e DATABASE_URL="postgresql+psycopg://smt:smt@<db-host>:5432/society_maintenance" \
-  -e JWT_SECRET_KEY="<long-random-string>" \
-  -e CORS_ORIGINS="https://residency.example.com" \
-  -e EMAIL_ENABLED=true \
-  -e SMTP_HOST="smtp.resend.com" \
-  -e SMTP_PORT=465 \
-  -e SMTP_USERNAME="resend" \
-  -e SMTP_PASSWORD="<RESEND_API_KEY>" \
-  -e EMAIL_FROM="Society Portal <noreply@your-domain.com>" \
-  -e OVERDUE_THRESHOLD_DAYS=7 \
-  ghcr.io/<owner>/<repo>/residency-backend:v1.1.0
+```mermaid
+flowchart TB
+    subgraph Compose["Docker Compose stack"]
+        DB[("PostgreSQL (internal network)")]
+        MIG["migrate (one-shot alembic)"]
+        API["backend :8000"]
+        UI["frontend :3000"]
+        VOL["uploads volume (/app/uploads)"]
+        MIG --> DB
+        API --> DB
+        API --> VOL
+        UI --> API
+    end
+    HOST["Browser"] -->|http://localhost:3000| UI
+    HOST -->|http://localhost:8000/api/v1| API
 ```
 
-Run `alembic upgrade head` before the first start (the compose backend does this automatically). Nothing is baked into the image; all of the above is runtime configuration.
+The stack has four services:
 
-## Production Deployment
+| Service | Build / image | Purpose |
+| --- | --- | --- |
+| `db` | `postgres:16-alpine` | PostgreSQL, reachable only on the internal network (loopback port 5433 for host tooling) |
+| `migrate` | backend image, command `alembic upgrade head` | One-shot migration runner; applies schema and exits |
+| `backend` | built from the root `Dockerfile` | FastAPI API on port 8000 |
+| `frontend` | built from `frontend/Dockerfile` | Next.js production server (standalone) on port 3000 |
 
-> **Status:** the hosted URLs are waiting on deployment credentials. The steps below are the intended, verified setup. Nothing here is fabricated, and this section will be updated with the real URLs once the app is live.
+Startup is ordered: `db` becomes healthy, `migrate` runs to completion, `backend` starts, and only once `backend` is healthy does `frontend` start.
 
-The production topology mirrors the local architecture:
+### Quick start
 
-1. **Database.** A managed PostgreSQL (Render, Railway, Neon, or a VPS). Point `DATABASE_URL` at it and run `alembic upgrade head`.
-2. **Backend.** Deploy the GHCR image (`ghcr.io/<owner>/<repo>/residency-backend`) to Render, Railway, or Fly with all the variables from [Environment Variables](#environment-variables), including `JWT_SECRET_KEY`, `CORS_ORIGINS` (the frontend origin), and the `EMAIL_*` block. Attach a persistent disk for `UPLOAD_DIR` (or move to an object store behind `StorageService`). Verify `GET /health` and `GET /health/db` over HTTPS.
-3. **Frontend.** Deploy `frontend/` to Vercel (`pnpm build`), set `NEXT_PUBLIC_API_BASE_URL` to the deployed backend origin, and add that origin to the backend's `CORS_ORIGINS`.
-4. **Email.** Enable `EMAIL_ENABLED=true` and configure the Resend SMTP relay as described in [Notifications](#notifications). Send a test status-change email and a test important-notice email.
-5. **Uploads persistence.** Attach persistent storage to the backend so uploaded photos survive redeploys. On a self-managed host, bind-mount a host directory (for example `/srv/residency/uploads:/app/uploads`).
+```bash
+git clone https://github.com/InvictusRex/Residency.git Residency
+cd Residency
+cp .env.example .env
+# edit .env: set a strong JWT_SECRET_KEY, your CORS_ORIGINS, email settings, etc.
+docker compose up -d --build
+docker compose ps
+```
 
-Self-hosted variant: run PostgreSQL and the backend with `docker compose` behind a Cloudflare Tunnel, expose only the tunnel, and schedule regular `pg_dump` backups plus file-level backups of the uploads volume.
+On a fresh install the database is empty, so seed the initial admin, a demo resident, and the default categories once (development-only credentials, see [Demo Accounts](#demo-accounts)):
+
+```bash
+docker compose run --rm backend python -m app.seed
+```
+
+Open http://localhost:3000. The API is at http://localhost:8000 with interactive docs at http://localhost:8000/docs.
+
+### Configuration (.env)
+
+Copy `.env.example` to `.env` and set:
+
+- `JWT_SECRET_KEY` to a long random string (generate one with `python -c "import secrets; print(secrets.token_urlsafe(64))"`).
+- `CORS_ORIGINS` to the frontend origin(s) you actually use (default `http://localhost:3000`).
+- `EMAIL_ENABLED` and the `SMTP_*` variables if you want email (see [Resend setup](#resend-setup)).
+- `OVERDUE_THRESHOLD_DAYS` as your preferred overdue fallback threshold.
+- `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` if you change the database credentials. Note these are applied only when the `pgdata` volume is first created; changing them later requires recreating the volume.
+- `NEXT_PUBLIC_API_BASE_URL` to the API origin the browser should call (see [Local vs public API URL](#local-vs-public-api-url)).
+
+### Migrations
+
+Migrations run through the dedicated one-shot `migrate` service, which executes `alembic upgrade head` and exits. The backend waits for it to succeed, so there is no migration/startup race. To run migrations manually:
+
+```bash
+docker compose run --rm migrate
+```
+
+After pulling an update that ships new migrations, re-run the migrate service before (or alongside) restarting the backend:
+
+```bash
+git pull
+docker compose run --rm migrate
+docker compose up -d
+```
+
+### Persistent volumes
+
+- `pgdata` -> `/var/lib/postgresql/data` holds the PostgreSQL data.
+- `uploads` -> `/app/uploads` holds complaint photos. Photos therefore survive container recreation, image rebuilds, and `docker compose down`.
+
+### Healthchecks
+
+- `db`: `pg_isready`
+- `backend`: `GET /health`
+- `frontend`: `GET /login`
+
+### Useful commands
+
+```bash
+docker compose up -d                # start (builds images on first run)
+docker compose ps                   # show service status
+docker compose logs -f backend      # follow backend logs
+docker compose logs -f frontend     # follow frontend logs
+docker compose down                 # stop (keeps data)
+docker compose down -v              # stop AND delete volumes (DESTROYS ALL DATA)
+docker compose build                # rebuild images without starting
+docker compose up -d --build        # rebuild and start
+docker compose run --rm migrate     # run migrations manually
+docker compose exec backend sh      # shell inside the backend
+```
+
+### Backups
+
+Database:
+
+```bash
+docker compose exec db pg_dump -U smt society_maintenance > residency_backup.sql
+```
+
+Uploads:
+
+```bash
+docker run --rm -v residency_uploads:/data -v "$(pwd):/backup" alpine tar czf /backup/uploads.tar.gz -C /data .
+```
+
+Restore the database with `cat residency_backup.sql | docker compose exec -T db psql -U smt -d society_maintenance`.
+
+### GHCR image
+
+The backend image is also published to GitHub Container Registry on version tags by `.github/workflows/docker-publish.yml` (`ghcr.io/invictusrex/residency/residency-backend`). You can pull it directly if you prefer, but local development and self-hosting simply use `docker compose build`. The frontend is intentionally built locally, because `NEXT_PUBLIC_API_BASE_URL` is baked into the image at build time and differs per installation.
+
+## Local vs public API URL
+
+The browser calls the backend through `NEXT_PUBLIC_API_BASE_URL` (a build-time value). Which value to use depends on where the browser sits relative to the backend:
+
+- **Local (same machine or LAN):** `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`. The browser reaches the backend through the loopback-published port.
+- **Public (exposed via Cloudflare Tunnel):** `NEXT_PUBLIC_API_BASE_URL=https://api.<your-domain>`. The browser reaches the public hostname, which the tunnel forwards to the local backend.
+
+Because `NEXT_PUBLIC_*` values are baked in at build time, switch between the two by setting the variable in `.env` and rebuilding the frontend:
+
+```bash
+# in .env
+NEXT_PUBLIC_API_BASE_URL=https://api.<your-domain>
+
+# rebuild and restart only the frontend
+docker compose build frontend
+docker compose up -d frontend
+```
+
+The backend must also allow the frontend origin in `CORS_ORIGINS` (e.g. `https://residency.<your-domain>`), then restart the backend:
+
+```bash
+# in .env
+CORS_ORIGINS=http://localhost:3000,https://residency.<your-domain>
+
+docker compose up -d backend
+```
+
+## Exposing an Installation (Cloudflare Tunnel, optional)
+
+Cloudflare is **not** part of Residency. It is optional external infrastructure you can use on your own node to expose a local installation publicly. Residency runs perfectly well with just `docker compose up -d` on a machine with no Cloudflare anywhere.
+
+```mermaid
+flowchart LR
+    USER["Users"] -->|HTTPS| CF["Cloudflare edge (TLS)"]
+    CF -->|tunnel| UI["localhost:3000 (frontend)"]
+    CF -->|tunnel| API["localhost:8000 (backend)"]
+```
+
+The tunnel runs on the host, outside the Compose stack, and maps two hostnames onto the loopback ports:
+
+| Public hostname | Local target |
+| --- | --- |
+| `residency.<your-domain>` | `http://localhost:3000` (frontend) |
+| `api.<your-domain>` | `http://localhost:8000` (backend) |
+
+To go public:
+
+1. Install `cloudflared` on the host and create a tunnel with the two ingress rules above.
+2. Rebuild the frontend with `NEXT_PUBLIC_API_BASE_URL=https://api.<your-domain>`.
+3. Add `https://residency.<your-domain>` to `CORS_ORIGINS` and restart the backend.
+4. Cloudflare terminates TLS and provides public ingress; Residency itself stays on localhost.
+
+## Resend Setup
+
+Email is implemented in `NotificationService` over SMTP and is disabled by default. Resend's SMTP relay is a drop-in production configuration, with no code changes required.
+
+| Variable | Value for Resend |
+| --- | --- |
+| `EMAIL_ENABLED` | `true` |
+| `SMTP_HOST` | `smtp.resend.com` |
+| `SMTP_PORT` | `465` (implicit TLS; other ports use STARTTLS) |
+| `SMTP_USERNAME` | `resend` |
+| `SMTP_PASSWORD` | your Resend API key |
+| `EMAIL_FROM` | a verified sender, e.g. `"Society Portal <notifications@your-domain.com>"` |
+
+Set these in `.env` and restart the backend:
+
+```bash
+docker compose up -d backend
+```
+
+Two flows send mail: a complaint status change emails the owning resident (with old/new status and the admin note), and creating an important notice emails every active resident. Non-important notices never trigger the important-notice blast, and delivery runs as a post-commit background task, so an email failure never corrupts the underlying transaction. With `EMAIL_ENABLED=false` messages are logged and skipped. Never commit a real API key; keep it in your `.env` or deployment secret store.
 
 ## Testing
 
@@ -469,14 +635,18 @@ pnpm exec tsc --noEmit
 pnpm build
 ```
 
-- **Backend pytest.** 159+ tests covering auth, the authorization matrix, the complaint lifecycle and history, photo upload and security, filters, pagination, overdue boundaries, notices and email triggers, dashboard aggregation, admin residents, account changes, and edge cases. The suite runs against an isolated `smt_test` database and needs no email configuration (`EMAIL_ENABLED=false` in tests).
+- **Backend pytest.** 160+ tests covering auth, the authorization matrix, the complaint lifecycle and history, photo upload and security, filters, pagination, overdue boundaries, notices and email triggers, dashboard aggregation, admin residents, account changes, and edge cases. The suite runs against an isolated `smt_test` database and needs no email configuration (`EMAIL_ENABLED=false` in tests).
 - **Frontend typecheck and build.** `tsc --noEmit` and `next build` both pass clean.
 - **Live E2E.** A 47-check E2E suite exercises registration, login, refresh, complaint creation with a photo, history, admin filtering, priority, the status lifecycle, overdue ordering, notices, and the dashboard against a live server.
 - **CI.** `.github/workflows/backend-ci.yml` runs the full pytest suite against a PostgreSQL service container on every push to `main`.
 
 ## Demo Accounts
 
-Seeded by `python -m app.seed` (idempotent; `--with-sample-data` also adds sample complaints and notices).
+Seeded by `python -m app.seed` (idempotent; `--with-sample-data` also adds sample complaints and notices). In the Compose stack, run it inside the backend container:
+
+```bash
+docker compose run --rm backend python -m app.seed
+```
 
 > **DEVELOPMENT ONLY. DO NOT USE THESE CREDENTIALS IN PRODUCTION.**
 
@@ -492,5 +662,5 @@ Seeded by `python -m app.seed` (idempotent; `--with-sample-data` also adds sampl
 - **API documentation:** [docs/api.md](docs/api.md)
 - **Database schema:** [docs/database.md](docs/database.md)
 - **Notification flow:** [docs/notification-flow.md](docs/notification-flow.md)
-- **Container image:** `ghcr.io/<owner>/<repo>/residency-backend` (tags: `v1.1.0`, `latest`)
-- **Hosted application URL:** pending deployment (see [Production Deployment](#production-deployment))
+- **Container image:** `ghcr.io/invictusrex/residency/residency-backend` (tags: `v1.1`, `latest`)
+- **Hosted application URL:** self-hosted via [Docker Compose](#self-hosting-with-docker-compose); optionally exposed with [Cloudflare Tunnel](#exposing-an-installation-cloudflare-tunnel-optional)
