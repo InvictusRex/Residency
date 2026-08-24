@@ -762,3 +762,14 @@ html.light .category-card { border-color: var(--border); }
 .search:focus-within { border-color: var(--lime); box-shadow: 0 0 0 2px rgba(132,204,22,.2); }
 .search .material-symbols-outlined { font-size: 19px; }
 .filters .search { grid-column: 1 / -1; }
+
+@keyframes donut-draw {
+  from { stroke-dasharray: 0 9999; }
+  to { stroke-dasharray: var(--dash); }
+}
+.donut-seg { animation: donut-draw 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+.stat-icon { position: absolute; top: 14px; right: 14px; color: var(--text-muted); opacity: .6; }
+.stat-card.yellow .stat-icon { color: var(--yellow); opacity: 1; }
+.stat-card.lime .stat-icon { color: var(--lime-2); opacity: 1; }
+.stat-card .stat-icon .material-symbols-outlined { font-size: 24px; }

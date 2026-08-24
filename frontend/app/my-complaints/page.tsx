@@ -11,7 +11,8 @@ import { ComplaintCards } from '@/components/complaints/complaint-cards'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Pagination } from '@/components/shared/pagination'
 import AnimatedNumber from '@/components/animations/AnimatedNumber'
-import BlurText from '@/components/animations/BlurText'
+import { PageTitle } from '@/components/shared/page-title'
+import { Icon } from '@/components/ui/icon'
 
 const PAGE_SIZE = 12
 
@@ -52,7 +53,7 @@ export default function MyComplaintsPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Resident Services</p>
-          <BlurText text="My Complaints" className="rb-title" />
+          <PageTitle text="My Complaints" />
           <p className="subheading">Track and manage your submitted facility issues.</p>
         </div>
         <button className="primary" onClick={() => router.push('/my-complaints/new')}>
@@ -61,10 +62,10 @@ export default function MyComplaintsPage() {
       </div>
 
       <div className="stat-grid">
-        <StatCard label="Total" value={totalQ.data?.total ?? 0} />
-        <StatCard label="Submitted" value={openQ.data?.total ?? 0} yellow />
-        <StatCard label="In Progress" value={progressQ.data?.total ?? 0} lime />
-        <StatCard label="Resolved" value={resolvedQ.data?.total ?? 0} />
+        <StatCard label="Total" value={totalQ.data?.total ?? 0} icon="receipt_long" />
+        <StatCard label="Submitted" value={openQ.data?.total ?? 0} yellow icon="schedule" />
+        <StatCard label="In Progress" value={progressQ.data?.total ?? 0} lime icon="construction" />
+        <StatCard label="Resolved" value={resolvedQ.data?.total ?? 0} icon="check_circle" />
       </div>
 
       <div className="chip-row" role="tablist" aria-label="Filter complaints">
@@ -119,9 +120,24 @@ export default function MyComplaintsPage() {
   )
 }
 
-function StatCard({ label, value, yellow, lime }: { label: string; value: number; yellow?: boolean; lime?: boolean }) {
+function StatCard({
+  label,
+  value,
+  yellow,
+  lime,
+  icon,
+}: {
+  label: string
+  value: number
+  yellow?: boolean
+  lime?: boolean
+  icon: string
+}) {
   return (
-    <div className="stat-card${yellow ? ' yellow' : ''}${lime ? ' lime' : ''}">
+    <div className={`stat-card${yellow ? ' yellow' : ''}${lime ? ' lime' : ''}`}>
+      <span className="stat-icon">
+        <Icon name={icon} size={24} fill={yellow || lime} />
+      </span>
       <span>{label}</span>
       <strong>
         <AnimatedNumber value={value} />

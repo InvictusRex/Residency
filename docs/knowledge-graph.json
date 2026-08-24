@@ -401,7 +401,8 @@
     "typography_readability": "done: ~1-2px bump across small/secondary text (complaint titles, resident info, filter labels/values, search, table headers, IDs, dates, badges, sidebar nav, breadcrumbs, notices, categories, detail timeline, forms, dialogs, toasts, pagination) in globals.css only; headings + dashboard metric numbers unchanged; no layout/spacing changes",
     "complaints_triage_sort": "done: new sort=triage orders OPEN -> IN_PROGRESS -> RESOLVED then priority HIGH->LOW then newest; admin complaints page defaults to it; new backend test (143 total)",
     "residents_email_password": "done: admin resident management (list/activate/deactivate) + self-service email/password change; resident topbar logout; dashboard graphs verified fully dynamic",
-    "ui_theme_consistency": "done: profile two-column grid, resident stat cards -> admin-style metric cards, topnav vertical alignment via box-shadow underline, light-mode fully tokenized (input-bg/hover-text/row-sep/chip-bg + amber accent) across all pages"
+    "ui_theme_consistency": "done: profile two-column grid, resident stat cards -> admin-style metric cards, topnav vertical alignment via box-shadow underline, light-mode fully tokenized (input-bg/hover-text/row-sep/chip-bg + amber accent) across all pages",
+    "ui_auth_consistency_pass2": "done: refresh-token session model (10min access + 7d refresh, silent single-flight refresh on 401, persists across reload); donut draw-on animation; shared PageTitle entrance animation across all pages; resident stat cards now admin-style metric cards with icons; topnav links full-height (underline at navbar bottom); favicon app/icon.svg + exact title Residency; light mode token audit"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",
@@ -452,7 +453,8 @@
     "typography: 60+ secondary text sizes raised 1-2px while keeping condensed/technical aesthetic, spacing, heights and headings intact",
     "backend: sort=triage added to complaint list (status_case then priority_case then created desc); route regex allows it; test added; frontend admin default sort triage + select option",
     "backend: GET/PATCH /api/v1/admin/residents (admin-only), PATCH /users/me/email + /users/me/password (current-password required); 13 new backend tests; frontend: /admin/residents page, resident topbar logout, profile email+password sections; dashboard by_category/donut confirmed data-driven (no hardcoding)",
-    "UI pass: profile-grid 2-col (account+email | password+session), stat-card 4-col metric styling + 2-col tablet, topnav link centering (no border offset), semantic theme tokens for light mode (inputs, hover, separators, chip bg, amber yellow)"
+    "UI pass: profile-grid 2-col (account+email | password+session), stat-card 4-col metric styling + 2-col tablet, topnav link centering (no border offset), semantic theme tokens for light mode (inputs, hover, separators, chip bg, amber yellow)",
+    "auth: backend POST /auth/refresh + refresh_token in TokenResponse, access 10min default, refresh 7d; frontend apiRequest/apiRequestBlob auto-refresh once on 401 with single-flight + retry, auth-provider stores refresh + syncs on refresh event; login stores refresh_token. charts: donut draw-on keyframes; page titles via shared PageTitle(BlurText); nav links stretch full height; stat cards + icons; favicon + title"
   ],
   "security_review": {
     "date": "2026-08-23",

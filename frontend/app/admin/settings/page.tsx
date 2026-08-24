@@ -8,6 +8,7 @@ import { Shell } from '@/components/shell'
 import { LoadingState } from '@/components/shared/states'
 import { useToast } from '@/components/ui/toast'
 import { Icon } from '@/components/ui/icon'
+import { PageTitle } from '@/components/shared/page-title'
 
 export default function AdminSettingsPage() {
   const { token } = useAuth()
@@ -48,7 +49,7 @@ export default function AdminSettingsPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Admin Control Center</p>
-          <h1>Operational Configuration</h1>
+          <PageTitle text="Operational Configuration" />
           <p className="subheading">Adjust global platform parameters and thresholds.</p>
         </div>
       </div>

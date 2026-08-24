@@ -23,8 +23,56 @@ export type { Status, Priority, Complaint, ApiError, User, Notice, Page, Setting
 
 const baseUrl = () => `${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000'}/api/v1`
 
+const TOKEN_KEY = 'residency.token'
+const REFRESH_KEY = 'residency.refresh'
+const USER_KEY = 'residency.user'
+
 export const getToken = () =>
-  typeof window === 'undefined' ? undefined : (localStorage.getItem('residency.token') ?? undefined)
+  typeof window === 'undefined' ? undefined : (localStorage.getItem(TOKEN_KEY) ?? undefined)
+
+export const getRefreshToken = () =>
+  typeof window === 'undefined' ? undefined : (localStorage.getItem(REFRESH_KEY) ?? undefined)
+
+function clearSession(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(REFRESH_KEY)
+  localStorage.removeItem(USER_KEY)
+  const path = window.location.pathname
+  if (path !== '/login' && path !== '/register') window.location.assign('/login')
+}
+
+let refreshPromise: Promise<boolean> | null = null
+
+async function tryRefresh(): Promise<boolean> {
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) return false
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const response = await fetch(`${baseUrl()}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        })
+        if (!response.ok) {
+          clearSession()
+          return false
+        }
+        const data = await response.json()
+        localStorage.setItem(TOKEN_KEY, data.access_token)
+        localStorage.setItem(REFRESH_KEY, data.refresh_token)
+        window.dispatchEvent(new Event('residency-token-refreshed'))
+        return true
+      } catch {
+        return false
+      } finally {
+        refreshPromise = null
+      }
+    })()
+  }
+  return refreshPromise
+}
 
 async function parseError(response: Response): Promise<ApiError> {
   let body: { detail?: string; code?: string; errors?: { loc?: Array<string | number>; msg?: string }[] } = {}
@@ -37,12 +85,6 @@ async function parseError(response: Response): Promise<ApiError> {
     if (field) acc[String(field)] = e.msg ?? 'Invalid value'
     return acc
   }, {})
-  if (response.status === 401 && typeof window !== 'undefined') {
-    localStorage.removeItem('residency.token')
-    localStorage.removeItem('residency.user')
-    const path = window.location.pathname
-    if (path !== '/login' && path !== '/register') window.location.assign('/login')
-  }
   return {
     status: response.status,
     code: body.code,
@@ -51,21 +93,42 @@ async function parseError(response: Response): Promise<ApiError> {
   }
 }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
+async function rawRequest(path: string, init: RequestInit, token?: string): Promise<Response> {
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
   if (!(init.body instanceof FormData)) headers.set('Content-Type', 'application/json')
   if (token) headers.set('Authorization', `Bearer ${token}`)
-  const response = await fetch(`${baseUrl()}${path}`, { ...init, headers })
+  return fetch(`${baseUrl()}${path}`, { ...init, headers })
+}
+
+async function resolveJson<T>(response: Response): Promise<T> {
   if (!response.ok) throw await parseError(response)
   if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
+export async function apiRequest<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
+  let response = await rawRequest(path, init, token)
+  if (
+    response.status === 401 &&
+    path !== '/auth/refresh' &&
+    token &&
+    (await tryRefresh())
+  ) {
+    response = await rawRequest(path, init, getToken())
+  }
+  return resolveJson<T>(response)
+}
+
 export async function apiRequestBlob(path: string, token: string): Promise<Blob> {
-  const response = await fetch(`${baseUrl()}${path}`, {
+  let response = await fetch(`${baseUrl()}${path}`, {
     headers: { Accept: 'image/*', Authorization: `Bearer ${token}` },
   })
+  if (response.status === 401 && path !== '/auth/refresh' && (await tryRefresh())) {
+    response = await fetch(`${baseUrl()}${path}`, {
+      headers: { Accept: 'image/*', Authorization: `Bearer ${getToken()}` },
+    })
+  }
   if (!response.ok) throw await parseError(response)
   return response.blob()
 }
@@ -96,6 +159,8 @@ export function buildNoticeQuery(params: { limit?: number; offset?: number }): s
 export const api = {
   login: (body: { email: string; password: string }) =>
     apiRequest<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  refresh: (refreshToken: string) =>
+    apiRequest<AuthResponse>('/auth/refresh', { method: 'POST', body: JSON.stringify({ refresh_token: refreshToken }) }),
   register: (body: { name: string; email: string; password: string }) =>
     apiRequest<User>('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   me: (token: string) => apiRequest<User>('/auth/me', {}, token),

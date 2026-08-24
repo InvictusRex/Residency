@@ -7,11 +7,12 @@ type AuthContextValue = {
   user: User | null
   token: string | null
   loading: boolean
-  signIn: (token: string, user: User) => void
+  signIn: (token: string, user: User, refreshToken?: string) => void
   signOut: () => void
 }
 
 const TOKEN_KEY = 'residency.token'
+const REFRESH_KEY = 'residency.refresh'
 const USER_KEY = 'residency.user'
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -36,21 +37,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {
         localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(REFRESH_KEY)
         localStorage.removeItem(USER_KEY)
         setToken(null)
       })
       .finally(() => setLoading(false))
   }, [])
 
-  const signIn = useCallback((nextToken: string, nextUser: User) => {
+  useEffect(() => {
+    const onRefreshed = () => {
+      setToken(localStorage.getItem(TOKEN_KEY))
+    }
+    window.addEventListener('residency-token-refreshed', onRefreshed)
+    return () => window.removeEventListener('residency-token-refreshed', onRefreshed)
+  }, [])
+
+  const signIn = useCallback((nextToken: string, nextUser: User, refreshToken?: string) => {
     localStorage.setItem(TOKEN_KEY, nextToken)
     localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
+    if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
     setToken(nextToken)
     setUser(nextUser)
   }, [])
 
   const signOut = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(REFRESH_KEY)
     localStorage.removeItem(USER_KEY)
     setToken(null)
     setUser(null)

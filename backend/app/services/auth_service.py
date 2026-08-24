@@ -1,9 +1,17 @@
+import uuid
+
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.enums import Role
 from app.core.exceptions import ConflictError, UnauthorizedError, ValidationError
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
 from app.models.user import User
 from app.schemas.auth import RegisterRequest, TokenResponse
 
@@ -43,10 +51,28 @@ def authenticate_user(db: Session, email: str, password: str) -> User:
 def build_token_response(user: User) -> TokenResponse:
     return TokenResponse(
         access_token=create_access_token(str(user.id), user.role.value),
+        refresh_token=create_refresh_token(str(user.id), user.role.value),
         token_type="bearer",
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         user=user,
     )
+
+
+def refresh_session(db: Session, refresh_token: str) -> TokenResponse:
+    payload = decode_access_token(refresh_token)
+    if payload.get("type") != "refresh":
+        raise UnauthorizedError("invalid_refresh_token")
+    subject = payload.get("sub")
+    if not isinstance(subject, str) or not subject:
+        raise UnauthorizedError("invalid_refresh_token")
+    try:
+        user_id = uuid.UUID(subject)
+    except ValueError:
+        raise UnauthorizedError("invalid_refresh_token") from None
+    user: User | None = db.get(User, user_id)
+    if user is None or not user.is_active:
+        raise UnauthorizedError("invalid_refresh_token")
+    return build_token_response(user)
 
 
 def change_email(db: Session, user: User, email: str, current_password: str) -> User:

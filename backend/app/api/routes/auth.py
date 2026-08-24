@@ -5,7 +5,7 @@ from app.core.dependencies import get_current_user
 from app.core.exceptions import AppError
 from app.core.rate_limit import SlidingWindowRateLimiter
 from app.db.session import get_db
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
+from app.schemas.auth import LoginRequest, RefreshRequest, RegisterRequest, TokenResponse
 from app.models.user import User
 from app.schemas.user import UserOut
 from app.services import auth_service
@@ -63,6 +63,24 @@ def login(
 ) -> TokenResponse:
     user = auth_service.authenticate_user(db, data.email, data.password)
     return auth_service.build_token_response(user)
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Refresh the session",
+    description=(
+        "Exchanges a valid refresh token for a fresh access token (and a new refresh token). "
+        "Used by the frontend to silently restore sessions after the access token expires."
+    ),
+    responses={
+        200: {"model": TokenResponse, "description": "Refreshed"},
+        401: {"model": None, "description": "invalid_refresh_token"},
+    },
+)
+def refresh(data: RefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    return auth_service.refresh_session(db, data.refresh_token)
 
 
 @router.get(

@@ -10,6 +10,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { Icon } from '@/components/ui/icon'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { useToast } from '@/components/ui/toast'
+import { PageTitle } from '@/components/shared/page-title'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Plumbing: 'plumbing',
@@ -45,7 +46,7 @@ export default function AdminCategoriesPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Admin Control Center</p>
-          <h1>Manage Categories</h1>
+          <PageTitle text="Manage Categories" />
           <p className="subheading">Organize issue types for structured reporting.</p>
         </div>
         <button className="primary" onClick={() => setCreateOpen(true)}>

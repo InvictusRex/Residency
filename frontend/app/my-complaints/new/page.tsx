@@ -7,6 +7,7 @@ import { queryKeys } from '@/lib/query-keys'
 import { Icon } from '@/components/ui/icon'
 import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
+import { PageTitle } from '@/components/shared/page-title'
 
 const MAX_UPLOAD = 5 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -71,7 +72,7 @@ export default function NewComplaintPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Resident Services</p>
-          <h1>Initiate Sequence</h1>
+          <PageTitle text="Initiate Sequence" />
           <p className="subheading">File a new situational report. Ensure all parameters are accurate.</p>
         </div>
       </div>

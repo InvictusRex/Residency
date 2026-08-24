@@ -11,7 +11,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states
 import { Pagination } from '@/components/shared/pagination'
 import { Icon } from '@/components/ui/icon'
 import { useToast } from '@/components/ui/toast'
-import BlurText from '@/components/animations/BlurText'
+import { PageTitle } from '@/components/shared/page-title'
 
 const PAGE_SIZE = 20
 
@@ -124,7 +124,7 @@ export default function AdminComplaintsPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Admin Control Center</p>
-          <BlurText text="Complaint Management" className="rb-title" />
+          <PageTitle text="Complaint Management" />
           <p className="subheading">Monitor and resolve resident issues with high-visibility tracking.</p>
         </div>
         <button className="outline" onClick={exportCsv} disabled={exporting}>

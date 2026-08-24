@@ -11,7 +11,7 @@ const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', displ
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'Residency — Community management',
+  title: 'Residency',
   description: 'Manage residency complaints, notices, and community operations.',
 }
 

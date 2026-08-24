@@ -10,6 +10,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { Icon } from '@/components/ui/icon'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { useToast } from '@/components/ui/toast'
+import { PageTitle } from '@/components/shared/page-title'
 
 export default function AdminNoticesPage() {
   const { token } = useAuth()
@@ -36,7 +37,7 @@ export default function AdminNoticesPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Admin Control Center</p>
-          <h1>Community Notices</h1>
+          <PageTitle text="Community Notices" />
           <p className="subheading">Manage announcements, alerts, and community updates. Important notices are pinned and emailed.</p>
         </div>
         <button className="primary" onClick={() => setCreateOpen(true)}>

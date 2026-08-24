@@ -9,6 +9,7 @@ import { ErrorState, LoadingState } from '@/components/shared/states'
 import { Icon } from '@/components/ui/icon'
 import { formatDate } from '@/components/ui/badge'
 import AnimatedNumber from '@/components/animations/AnimatedNumber'
+import { PageTitle } from '@/components/shared/page-title'
 
 const STATUS_META = [
   { key: 'OPEN', label: 'Open', color: '#84cc16' },
@@ -30,7 +31,7 @@ export default function DashboardPage() {
       <div className="page-heading dash-heading">
         <div>
           <p className="eyebrow">LIVE DATA FEED // RESIDENCY STATUS</p>
-          <h1 className="dash-title">OPERATIONS HUB</h1>
+          <PageTitle text="OPERATIONS HUB" className="dash-title" />
           <p className="subheading">Operational metrics from the Residency backend.</p>
         </div>
       </div>
@@ -153,6 +154,7 @@ function Donut({ segments }: { segments: { value: number; color: string }[] }) {
             const el = (
               <circle
                 key={i}
+                className="donut-seg"
                 cx="48"
                 cy="48"
                 r={r}
@@ -162,6 +164,7 @@ function Donut({ segments }: { segments: { value: number; color: string }[] }) {
                 strokeDasharray={`${len} ${c - len}`}
                 strokeDashoffset={-offset}
                 transform="rotate(-90 48 48)"
+                style={{ ['--dash' as string]: `${len} ${c - len}`, animationDelay: `${i * 0.08}s` }}
               />
             )
             offset += len

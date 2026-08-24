@@ -11,6 +11,7 @@ import { Icon } from '@/components/ui/icon'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Pagination } from '@/components/shared/pagination'
 import { useToast } from '@/components/ui/toast'
+import { PageTitle } from '@/components/shared/page-title'
 
 const PAGE_SIZE = 20
 
@@ -43,7 +44,7 @@ export default function AdminResidentsPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Admin Control Center</p>
-          <h1>Residents</h1>
+          <PageTitle text="Residents" />
           <p className="subheading">Manage resident accounts. Deactivated residents cannot sign in.</p>
         </div>
       </div>

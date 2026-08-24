@@ -139,3 +139,24 @@ class TestMe:
         assert resp.json()["id"] == me["id"]
         verify = client.get(f"{API}/auth/me", headers=resident_headers).json()
         assert verify["name"] == new_name
+
+class TestRefreshToken:
+    def test_refresh_returns_new_access_and_refresh(self, client, resident_headers):
+        me = client.get(f"{API}/auth/me", headers=resident_headers)
+        login = client.post(f"{API}/auth/login", json={"email": me.json()["email"], "password": "Passw0rd!Strong"}).json()
+        resp = client.post(f"{API}/auth/refresh", json={"refresh_token": login["refresh_token"]})
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert "access_token" in body and "refresh_token" in body
+        refreshed = client.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"})
+        assert refreshed.status_code == 200
+
+    def test_refresh_rejects_access_token(self, client, resident_headers):
+        user = client.get(f"{API}/auth/me", headers=resident_headers).json()
+        tok = client.post(f"{API}/auth/login", json={"email": user["email"], "password": "Passw0rd!Strong"}).json()
+        resp = client.post(f"{API}/auth/refresh", json={"refresh_token": tok["access_token"]})
+        assert resp.status_code == 401
+
+    def test_refresh_rejects_garbage(self, client):
+        resp = client.post(f"{API}/auth/refresh", json={"refresh_token": "not.a.token"})
+        assert resp.status_code == 401

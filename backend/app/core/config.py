@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+psycopg://smt:smt@127.0.0.1:5433/society_maintenance"
     JWT_SECRET_KEY: str = "dev-only-secret-please-change-me-0123456789abcdef"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
     UPLOAD_DIR: Path = Path("uploads")
     MAX_UPLOAD_SIZE_MB: int = 5

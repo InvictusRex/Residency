@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider'
 import { Shell } from '@/components/shell'
 import { Icon } from '@/components/ui/icon'
 import { useToast } from '@/components/ui/toast'
+import { PageTitle } from '@/components/shared/page-title'
 
 export default function ProfilePage() {
   const { token, user, signOut, signIn } = useAuth()
@@ -103,7 +104,7 @@ export default function ProfilePage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Account</p>
-          <h1>Your Profile</h1>
+          <PageTitle text="Your Profile" />
           <p className="subheading">Manage your account details and security.</p>
         </div>
       </div>

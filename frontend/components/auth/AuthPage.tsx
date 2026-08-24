@@ -50,7 +50,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         await api.register({ name, email, password })
       }
       const session = await api.login({ email, password })
-      signIn(session.access_token, session.user)
+      signIn(session.access_token, session.user, session.refresh_token)
       router.replace(session.user.role === 'ADMIN' ? '/dashboard' : '/my-complaints')
     } catch (err) {
       if (isApiError(err) && err.status === 429) {

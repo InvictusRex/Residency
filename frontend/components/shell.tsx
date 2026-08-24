@@ -111,8 +111,10 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
     return (
       <div className="residency-app" style={{ display: 'block' }}>
         <nav className="topnav">
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span className="topnav-brand">Residency</span>
+          <div style={{ display: 'flex', alignItems: 'stretch', height: '100%' }}>
+            <span className="topnav-brand" style={{ display: 'flex', alignItems: 'center' }}>
+              Residency
+            </span>
             <div className="topnav-links">
               {nav.map(({ href, label }) => (
                 <button
