@@ -1,7 +1,7 @@
 export type Role = 'RESIDENT' | 'ADMIN'
 export type Status = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED'
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH'
-export type Sort = 'newest' | 'oldest' | 'priority'
+export type Sort = 'newest' | 'oldest' | 'priority' | 'triage'
 
 export type User = {
   id: string

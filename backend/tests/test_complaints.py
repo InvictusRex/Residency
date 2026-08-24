@@ -429,3 +429,21 @@ class TestStatusLifecycle:
             json={"status": "IN_PROGRESS"},
         )
         assert resp.status_code == 403
+
+class TestTriageSort:
+    def test_triage_orders_open_then_progress_then_resolved(self, client, admin_headers, resident_headers, category_factory, complaint_factory):
+        category = category_factory(name="TriageCat")["id"]
+        open_high = complaint_factory(resident_headers, category_id=category)
+        client.patch(f"{API}/complaints/{open_high['id']}/priority", headers=admin_headers, json={"priority": "HIGH"})
+        open_low = complaint_factory(resident_headers, category_id=category)
+        in_progress = complaint_factory(resident_headers, category_id=category)
+        client.patch(f"{API}/complaints/{in_progress['id']}/status", headers=admin_headers, json={"status": "IN_PROGRESS"})
+        resolved = complaint_factory(resident_headers, category_id=category)
+        client.patch(f"{API}/complaints/{resolved['id']}/status", headers=admin_headers, json={"status": "RESOLVED", "note": "Fixed"})
+        client.patch(f"{API}/complaints/{resolved['id']}/priority", headers=admin_headers, json={"priority": "HIGH"})
+
+        resp = client.get(f"{API}/complaints?sort=triage", headers=admin_headers)
+        assert resp.status_code == 200, resp.text
+        ids = [i["id"] for i in resp.json()["items"]]
+        expected = [open_high["id"], open_low["id"], in_progress["id"], resolved["id"]]
+        assert ids == expected

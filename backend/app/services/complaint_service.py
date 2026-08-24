@@ -166,10 +166,17 @@ def list_complaints(
         (Complaint.priority == ComplaintPriority.MEDIUM, 1),
         else_=2,
     )
+    status_case = case(
+        (Complaint.status == ComplaintStatus.OPEN, 0),
+        (Complaint.status == ComplaintStatus.IN_PROGRESS, 1),
+        else_=2,
+    )
     if sort == "oldest":
         stmt = stmt.order_by(Complaint.created_at.asc())
     elif sort == "priority":
         stmt = stmt.order_by(priority_case.asc(), Complaint.created_at.desc())
+    elif sort == "triage":
+        stmt = stmt.order_by(status_case.asc(), priority_case.asc(), Complaint.created_at.desc())
     elif sort == "newest":
         stmt = stmt.order_by(Complaint.created_at.desc())
     elif user.role != Role.ADMIN:
