@@ -21,7 +21,7 @@ import type {
 
 export type { Status, Priority, Complaint, ApiError, User, Notice, Page, Settings } from '@/lib/types'
 
-const baseUrl = () => `${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000'}/api/v1`
+const baseUrl = () => `${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''}/v1`
 
 const TOKEN_KEY = 'residency.token'
 const REFRESH_KEY = 'residency.refresh'

@@ -642,18 +642,16 @@ pnpm build
 
 ## Demo Accounts
 
-Seeded by `python -m app.seed` (idempotent; `--with-sample-data` also adds sample complaints and notices). In the Compose stack, run it inside the backend container:
+The deployed instance at **https://residency.rupa.dev** is seeded with the demo accounts below. The public API lives at **https://residency-api.rupa.dev/api**.
 
-```bash
-docker compose run --rm backend python -m app.seed
-```
+> **DEMO CREDENTIALS. DO NOT USE THESE IN PRODUCTION.**
 
-> **DEVELOPMENT ONLY. DO NOT USE THESE CREDENTIALS IN PRODUCTION.**
+| Role | Username | Email | Password |
+| --- | --- | --- | --- |
+| Admin | `admin` | `admin@email.com` | `admin123!` |
+| Resident | - | `jane@email.com` | `JaneDoe1` |
 
-| Role | Email | Password |
-| --- | --- | --- |
-| Admin | `admin@example.com` | `Admin123!ChangeMe` |
-| Resident | `resident@example.com` | `Resident123!ChangeMe` |
+The admin account has role `ADMIN` and is active; Jane is a regular resident. For local development, `python -m app.seed` (or `docker compose run --rm backend python -m app.seed`) seeds its own local accounts and the default categories.
 
 ## Submission
 
@@ -663,4 +661,4 @@ docker compose run --rm backend python -m app.seed
 - **Database schema:** [docs/database.md](docs/database.md)
 - **Notification flow:** [docs/notification-flow.md](docs/notification-flow.md)
 - **Container image:** `ghcr.io/invictusrex/residency/residency-backend` (tags: `v1.1`, `latest`)
-- **Hosted application URL:** self-hosted via [Docker Compose](#self-hosting-with-docker-compose); optionally exposed with [Cloudflare Tunnel](#exposing-an-installation-cloudflare-tunnel-optional)
+- **Hosted application:** https://residency.rupa.dev (API: https://residency-api.rupa.dev/api)

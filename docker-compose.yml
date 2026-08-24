@@ -6,8 +6,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-smt}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smt}
       POSTGRES_DB: ${POSTGRES_DB:-society_maintenance}
-    ports:
-      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -38,7 +36,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-smt}:${POSTGRES_PASSWORD:-smt}@db:5432/${POSTGRES_DB:-society_maintenance}
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:18002:8000"
     volumes:
       - uploads:/app/uploads
     depends_on:
@@ -62,10 +60,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3010:3000"
     depends_on:
       backend:
         condition: service_healthy
