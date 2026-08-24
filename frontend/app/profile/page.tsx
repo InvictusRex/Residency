@@ -108,21 +108,22 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 720, display: 'grid', gap: 18 }}>
-        <section className="panel" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 18, borderBottom: '1px solid var(--border)' }}>
-            <div className="side-avatar" style={{ width: 64, height: 64, fontSize: 18, background: '#4d4632', color: 'var(--yellow)' }}>
-              {user?.name.slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: 'var(--font-space)', fontSize: 22, fontWeight: 700, color: 'var(--text-hi)', letterSpacing: '-.5px' }}>
-                  {user?.name}
-                </span>
-                <span className="cat-badge active">{user?.role}</span>
+      <div className="profile-grid">
+        <div>
+          <section className="panel" style={{ padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 18, borderBottom: '1px solid var(--border)' }}>
+              <div className="side-avatar" style={{ width: 64, height: 64, fontSize: 18, background: 'var(--chip-bg)', color: 'var(--yellow)' }}>
+                {user?.name.slice(0, 2).toUpperCase()}
               </div>
-              <p className="meta" style={{ marginTop: 4 }}>
-                {user?.created_at ? `Member since ${new Date(user.created_at).toLocaleDateString()}` : ''}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-space)', fontSize: 22, fontWeight: 700, color: 'var(--text-hi)', letterSpacing: '-.5px' }}>
+                    {user?.name}
+                  </span>
+                  <span className="cat-badge active">{user?.role}</span>
+                </div>
+                <p className="meta" style={{ marginTop: 4 }}>
+                  {user?.created_at ? `Member since ${new Date(user.created_at).toLocaleDateString()}` : ''}
               </p>
             </div>
           </div>
@@ -164,11 +165,13 @@ export default function ProfilePage() {
             </button>
           </form>
         </section>
+        </div>
 
-        <section className="panel" style={{ padding: 24 }}>
-          <div style={{ paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
-            <div className="section-label">Change Password</div>
-          </div>
+        <div>
+          <section className="panel" style={{ padding: 24 }}>
+            <div style={{ paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+              <div className="section-label">Change Password</div>
+            </div>
           <form className="form-panel" style={{ padding: '18px 0 0', gap: 16 }} onSubmit={savePassword}>
             <label>
               <span className="field-label">Current Password</span>
@@ -214,6 +217,7 @@ export default function ProfilePage() {
             </button>
           </div>
         </section>
+        </div>
       </div>
     </Shell>
   )

@@ -146,7 +146,7 @@ export default function ComplaintDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div
                 className="side-avatar"
-                style={{ width: 46, height: 46, background: '#4d4632', color: 'var(--yellow)', fontSize: 13 }}
+                style={{ width: 46, height: 46, background: 'var(--chip-bg)', color: 'var(--yellow)', fontSize: 13 }}
               >
                 {c.resident.name.slice(0, 2).toUpperCase()}
               </div>
