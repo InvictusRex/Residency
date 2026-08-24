@@ -397,7 +397,8 @@
     "page_design_audit": "done: all pages aligned to Stitch HTML; Export CSV implemented (frontend paginates complaints API respecting filters -> downloadable csv); dashboard keeps 5 real metrics",
     "dashboard_stitch_fidelity": "done: dashboard rebuilt to Stitch composition (4 metric cards: Total/Open/Resolved/Overdue; 3 equal panels: Status Distribution donut | By Category vertical bars | System Feed), 220px compact sidebar, Material Symbols font guarded with !important against generic span/strong selectors, removed motion/gsap wrappers from dashboard (kept subtle count-up), responsive 3->2->1 columns",
     "dashboard_composition_pass2": "done: second row is a true 3-column grid (Status | By Category | System Feed) at equal vertical start on all desktop widths; donut enlarged to 196px thick-ring; bar chart fills card height; feed fills panel height + internal scroll; sidebar New Notice moved to bottom (Stitch); complaints page got prominent search (client-side filter of current result set, no backend search invented)",
-    "dashboard_feed_span": "done: System Feed is now a right-side column spanning both dashboard rows (dash-layout grid minmax(0,2.2fr)/minmax(280px,.8fr); dash-feed grid-area 1/2/span 2; left dash-main holds metrics row + status/category row). Verified in compiled CSS bundle."
+    "dashboard_feed_span": "done: System Feed is now a right-side column spanning both dashboard rows (dash-layout grid minmax(0,2.2fr)/minmax(280px,.8fr); dash-feed grid-area 1/2/span 2; left dash-main holds metrics row + status/category row). Verified in compiled CSS bundle.",
+    "typography_readability": "done: ~1-2px bump across small/secondary text (complaint titles, resident info, filter labels/values, search, table headers, IDs, dates, badges, sidebar nav, breadcrumbs, notices, categories, detail timeline, forms, dialogs, toasts, pagination) in globals.css only; headings + dashboard metric numbers unchanged; no layout/spacing changes"
   },
   "fixes_applied": [
     "nested brief schemas (ResidentBrief/CategoryBrief/ActorBrief/AuthorBrief) got ConfigDict(from_attributes=True) so ORM objects serialize",
@@ -444,7 +445,8 @@
     "feed: flex-fills + overflow-y auto (internal scroll)",
     "sidebar: New Notice CTA moved to bottom footer (identity top, nav, footer: New Notice + theme + logout)",
     "complaints: full-width search bar filters current page client-side (ID/title/resident/category/status/priority), pagination hidden while searching, count shows shown-of-total",
-    "dashboard: dash-layout 2-col grid, feed spans rows 1-2 starting at metric-card top; dash-panels 2-col (status+category); feed fills height w/ internal scroll; collapses to stacked <920px"
+    "dashboard: dash-layout 2-col grid, feed spans rows 1-2 starting at metric-card top; dash-panels 2-col (status+category); feed fills height w/ internal scroll; collapses to stacked <920px",
+    "typography: 60+ secondary text sizes raised 1-2px while keeping condensed/technical aesthetic, spacing, heights and headings intact"
   ],
   "security_review": {
     "date": "2026-08-23",
