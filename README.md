@@ -9,6 +9,29 @@ Two roles use the platform:
 - **Residents** register, log in, file complaints (category, description, optional photo), track the status history of their own complaints, and read notices.
 - **Admins** manage the complaint queue, filter and sort it, set priorities, move complaints through the status lifecycle, post important and regular notices, configure the overdue threshold, manage residents and categories, and watch the numbers on a live dashboard.
 
+## Demo Accounts
+
+The deployed instance at **https://residency.rupa.dev** is seeded with the demo accounts below. The public API lives at **https://residency-api.rupa.dev/api**.
+
+> **DEMO CREDENTIALS. DO NOT USE THESE IN PRODUCTION.**
+
+| Role | Username | Email | Password |
+| --- | --- | --- | --- |
+| Admin | `admin` | `admin@email.com` | `admin123!` |
+| Resident | - | `jane@email.com` | `JaneDoe1` |
+
+The admin account has role `ADMIN` and is active; Jane is a regular resident. For local development, `python -m app.seed` (or `docker compose run --rm backend python -m app.seed`) seeds its own local accounts and the default categories.
+
+## Submission
+
+- **Source code:** [github.com/InvictusRex/Residency](https://github.com/InvictusRex/Residency) on branch `main`
+- **System design write-up:** [docs/system-design.md](docs/system-design.md) (under 800 words)
+- **API documentation:** [docs/api.md](docs/api.md)
+- **Database schema:** [docs/database.md](docs/database.md)
+- **Notification flow:** [docs/notification-flow.md](docs/notification-flow.md)
+- **Container image:** `ghcr.io/invictusrex/residency/residency-backend` (tags: `v1.1`, `latest`)
+- **Hosted application:** https://residency.rupa.dev (API: https://residency-api.rupa.dev/api)
+
 ## Features
 
 - **Registration and login.** Secure accounts with password policy checks, backed by the database.
@@ -639,26 +662,3 @@ pnpm build
 - **Frontend typecheck and build.** `tsc --noEmit` and `next build` both pass clean.
 - **Live E2E.** A 47-check E2E suite exercises registration, login, refresh, complaint creation with a photo, history, admin filtering, priority, the status lifecycle, overdue ordering, notices, and the dashboard against a live server.
 - **CI.** `.github/workflows/backend-ci.yml` runs the full pytest suite against a PostgreSQL service container on every push to `main`.
-
-## Demo Accounts
-
-The deployed instance at **https://residency.rupa.dev** is seeded with the demo accounts below. The public API lives at **https://residency-api.rupa.dev/api**.
-
-> **DEMO CREDENTIALS. DO NOT USE THESE IN PRODUCTION.**
-
-| Role | Username | Email | Password |
-| --- | --- | --- | --- |
-| Admin | `admin` | `admin@email.com` | `admin123!` |
-| Resident | - | `jane@email.com` | `JaneDoe1` |
-
-The admin account has role `ADMIN` and is active; Jane is a regular resident. For local development, `python -m app.seed` (or `docker compose run --rm backend python -m app.seed`) seeds its own local accounts and the default categories.
-
-## Submission
-
-- **Source code:** [github.com/InvictusRex/Residency](https://github.com/InvictusRex/Residency) on branch `main`
-- **System design write-up:** [docs/system-design.md](docs/system-design.md) (under 800 words)
-- **API documentation:** [docs/api.md](docs/api.md)
-- **Database schema:** [docs/database.md](docs/database.md)
-- **Notification flow:** [docs/notification-flow.md](docs/notification-flow.md)
-- **Container image:** `ghcr.io/invictusrex/residency/residency-backend` (tags: `v1.1`, `latest`)
-- **Hosted application:** https://residency.rupa.dev (API: https://residency-api.rupa.dev/api)
